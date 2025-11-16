@@ -1,0 +1,311 @@
+.wrapper {
+  display: grid;
+  grid-template-columns: 280px 1fr;
+  gap: 40px;
+  padding: 40px 24px;
+}
+
+.sidebar {
+  background-color: #fdfdfd;
+  padding: 24px;
+  border-radius: 12px;
+  border: 1px solid #f0f0f0;
+  height: fit-content;
+  /* Added for smooth transition just in case */
+  transition: transform 0.3s ease-in-out;
+}
+
+.filterHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 24px;
+  padding-bottom: 16px;
+  border-bottom: 1px solid #f0f0f0;
+}
+
+.filterHeader h3 {
+  font-size: 1.2rem;
+  font-weight: 600;
+}
+
+/* ADDED: Mobile-only close icon (hidden by default) */
+.mobileCloseIcon {
+  display: none;
+  font-size: 1.5rem;
+  font-weight: bold;
+  cursor: pointer;
+}
+.desktopIcon {
+  display: block; /* Show hamburger on desktop */
+}
+
+/* ADDED: Wrapper for filter content to allow scrolling */
+
+.filterSection {
+  margin-bottom: 24px;
+  padding-bottom: 24px;
+  border-bottom: 1px solid #f0f0f0;
+}
+/* ... (rest of filterSection, checkbox, price, etc. styles are unchanged) ... */
+.filterSection:last-child {
+  border-bottom: none;
+  padding-bottom: 0;
+  margin-bottom: 0;
+}
+.filterSection h4 {
+  font-size: 1rem;
+  font-weight: 600;
+  margin-bottom: 16px;
+}
+.checkboxItem {
+  display: flex;
+  align-items: center;
+  margin-bottom: 12px;
+}
+.checkboxItem label {
+  margin-left: 8px;
+  cursor: pointer;
+}
+.checkboxItem input[type="checkbox"] {
+  cursor: pointer;
+}
+.priceSlidersContainer {
+  padding: 8px 0;
+}
+.priceLabelsContainer {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-top: 12px;
+  text-align: center;
+}
+.priceLabel {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 8px 12px;
+  width: 48%;
+}
+.priceLabel label {
+  font-size: 0.8rem;
+  color: #6e6e73;
+  text-align: center;
+}
+.priceLabel span {
+  font-size: 0.95rem;
+  font-weight: 600;
+  color: #1d1d1f;
+}
+.sizeOptions {
+  display: flex;
+  gap: 10px;
+}
+.sizeButton {
+  padding: 8px 12px;
+  border: 1px solid #ccc;
+  border-radius: 8px;
+  background: #fff;
+  cursor: pointer;
+  font-weight: 500;
+  transition: all 0.2s ease;
+}
+.sizeButton.activeButton {
+  background-color: #111;
+  color: #fff;
+  border-color: #111;
+}
+
+.main {
+  width: 100%;
+}
+
+/* ADDED: Mobile filter trigger, hidden on desktop */
+.mobileFilterTrigger {
+  display: none;
+  justify-content: space-between;
+  align-items: center;
+  padding: 12px 16px;
+  border-radius: 8px;
+  border: 1px solid #e0e0e0;
+  background-color: #fff;
+  margin-bottom: 24px;
+  cursor: pointer;
+}
+.mobileFilterTrigger span:first-child {
+  font-weight: 600;
+}
+.mobileFilterTrigger .filterIcon {
+  font-size: 1.2rem;
+}
+
+/* ADDED: Overlay for when drawer is open */
+.overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background-color: rgba(0, 0, 0, 0.5);
+  z-index: 999; /* Below the sidebar */
+}
+
+
+.header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 24px;
+}
+/* ... (rest of header, grid, pagination styles are unchanged) ... */
+.header h2 {
+  font-size: 2rem;
+  font-weight: 700;
+}
+.header p {
+  color: #555;
+}
+.grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 24px;
+}
+.pagination {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  margin-top: 40px;
+  gap: 8px;
+}
+.pagination button {
+  padding: 8px 14px;
+  border: 1px solid #e0e0e0;
+  background-color: #fff;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  font-weight: 500;
+}
+.pagination button:hover {
+  background-color: #f5f5f5;
+  border-color: #ccc;
+}
+.pagination button:disabled {
+  color: #ccc;
+  cursor: not-allowed;
+  background-color: #fafafa;
+}
+.pagination .activePage {
+  background-color: #111;
+  color: #fff;
+  border-color: #111;
+}
+
+
+/* --- RESPONSIVENESS --- */
+
+@media (min-width: 901px) {
+  .wrapper {
+    padding-left: 100px;
+    padding-right: 100px;
+  }
+}
+
+@media (max-width: 1200px) {
+  .grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+/* --- MOBILE DRAWER STYLES --- */
+@media (max-width: 900px) {
+  .wrapper {
+    grid-template-columns: 1fr;
+    /* Remove gap since sidebar is now a drawer */
+    gap: 0;
+  }
+  
+  /* --- Sidebar becomes the slide-up drawer --- */
+  .sidebar {
+    /* Positioning */
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    width: 100%;
+    height: 85vh; /* 85% of viewport height */
+    z-index: 1000;
+    
+    /* Hiding/Showing */
+    transform: translateY(100%); /* Hidden by default */
+    
+    /* Styling */
+    border-radius: 12px 12px 0 0;
+    box-shadow: 0 -4px 12px rgba(0,0,0,0.1);
+    margin-bottom: 0; /* Remove grid margin */
+    
+    /* Internal Layout */
+    display: flex;
+    flex-direction: column;
+  }
+
+  .sidebar.sidebarOpen {
+    transform: translateY(0); /* Show */
+  }
+
+  /* Make filter content scrollable */
+  .filterContent {
+    overflow-y: auto;
+    /* Take up remaining space in the drawer */
+    flex-grow: 1;
+    /* Add padding that was removed from .sidebar */
+    padding: 0 24px 24px;
+  }
+  
+  .sidebar .filterHeader {
+    /* Make header sticky inside the drawer */
+    position: sticky;
+    top: 0;
+    background-color: #fdfdfd;
+    z-index: 1;
+    /* Re-add padding since .filterContent has it now */
+    padding: 24px 24px 0;
+    margin: 0 -24px 24px; /* Use negative margin to span full width */
+    border-bottom: 1px solid #f0f0f0;
+    padding-bottom: 16px;
+  }
+  
+  /* Swap hamburger for close icon */
+  .sidebar .mobileCloseIcon {
+    display: block;
+  }
+  .sidebar .desktopIcon {
+    display: none;
+  }
+
+
+  /* --- Show the mobile trigger --- */
+  .mobileFilterTrigger {
+    display: flex;
+  }
+
+  .grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+/* --- END MOBILE DRAWER --- */
+
+
+@media (max-width: 600px) {
+  .grid {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 16px;
+  }
+  .header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 10px;
+  }
+  .header h2 {
+    font-size: 1.5rem; /* Smaller header on mobile */
+  }
+}

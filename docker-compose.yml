@@ -1,0 +1,104 @@
+version: '3.9'
+
+services:
+  # -----------------------------------------------
+  # Frontend (React Dev)
+  # -----------------------------------------------
+  frontend:
+    image: node:20-alpine
+    container_name: ecommerce-frontend-dev
+    working_dir: /app
+    volumes:
+      # Map your host's frontend folder to the container
+      - ./frontend:/app
+      # Use a named volume for node_modules for performance
+      - node_modules_frontend:/app/node_modules
+    ports:
+      - "3000:3000"
+    environment:
+      # Your original env vars for hot-reloading
+      - CHOKIDAR_USEPOLLING=true
+      - WATCHPACK_POLLING=true
+      - FAST_REFRESH=true
+    # This command is from your file, it's perfect
+    command: sh -c "npm install && npm start"
+    stdin_open: true
+    tty: true
+    restart: unless-stopped
+    networks:
+      - ecommerce-net
+
+  # -----------------------------------------------
+  # Backend (Laravel)
+  # -----------------------------------------------
+  backend:
+    build:
+      # Tell compose to look in the ./backend folder for the Dockerfile
+      context: ./backend
+    container_name: ecommerce-backend-dev
+    ports:
+      - "8000:80"
+    volumes:
+      # Map your backend's src code
+      - ./backend/src:/var/www/html
+    depends_on:
+      - db
+    environment:
+      - DB_HOST=db
+      - DB_DATABASE=laravel
+      - DB_USERNAME=laravel
+      - DB_PASSWORD=secret
+    networks:
+      - ecommerce-net
+    # --- IMPORTANT FIX ---
+    # This command runs *instead* of the Dockerfile CMD.
+    # It adds 'composer install' which was missing from your dev flow.
+    command: sh -c "composer install --no-interaction && mkdir -p /var/www/html/storage/framework/cache/data /var/www/html/storage/framework/sessions /var/www/html/storage/framework/views /var/www/html/storage/logs && chown -R www-data:www-data /var/www/html/storage /var/www/html/bootstrap/cache && chmod -R 775 /var/www/html/storage /var/www/html/bootstrap/cache && apache2-foreground"
+
+  # -----------------------------------------------
+  # Database (MySQL)
+  # -----------------------------------------------
+  db:
+    image: mysql:8.0
+    container_name: ecommerce-db
+    restart: always
+    environment:
+      MYSQL_DATABASE: laravel
+      MYSQL_USER: laravel
+      MYSQL_PASSWORD: secret
+      MYSQL_ROOT_PASSWORD: root
+    ports:
+      - "3306:3306"
+    volumes:
+      - db_data:/var/lib/mysql
+    networks:
+      - ecommerce-net
+
+  # -----------------------------------------------
+  # PHPMyAdmin
+  # -----------------------------------------------
+  phpmyadmin:
+    image: phpmyadmin/phpmyadmin
+    container_name: ecommerce-pma
+    restart: always
+    ports:
+      - "8081:80"  # I changed this to 8081 to avoid conflicts
+    environment:
+      - PMA_HOST=db
+      - PMA_USER=laravel
+      - PMA_PASSWORD=secret
+    depends_on:
+      - db
+    networks:
+      - ecommerce-net
+
+# -----------------------------------------------
+# Volumes & Networks
+# -----------------------------------------------
+volumes:
+  db_data:
+  node_modules_frontend: # Named volume for frontend deps
+
+networks:
+  ecommerce-net:
+    driver: bridge

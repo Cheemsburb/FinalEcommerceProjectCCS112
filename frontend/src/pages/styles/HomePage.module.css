@@ -1,0 +1,427 @@
+*,
+*::before,
+*::after {
+  box-sizing: border-box; /* This fixes the width issue */
+}
+
+/* Container Class */
+.container {
+  /* No max-width or auto margin needed here now */
+  width: 100%;
+  /* Default responsive padding for smaller screens */
+  padding-left: clamp(1rem, 5%, 100px);
+  padding-right: clamp(1rem, 5%, 100px);
+}
+
+/* 1. Hero Section - Updated */
+.heroSection {
+  width: 100%;
+  height: 770px;
+  /* Default responsive padding */
+  padding-left: clamp(1rem, 5%, 100px);
+  padding-right: clamp(1rem, 5%, 100px);
+  padding-top: 4rem;
+  padding-bottom: 0;
+  display: flex;
+  align-items: flex-end; /* Align items to bottom on desktop */
+  justify-content: center; /* Center items horizontally */
+  flex-wrap: wrap;
+  gap: 2rem; /* Space between text and image */
+  color: #000;
+  background-color: #fff;
+}
+
+.heroContent {
+  flex: 1;
+  min-width: 350px;
+  max-width: 550px;
+  margin-bottom: 10.18rem; /* Desktop bottom margin */
+  text-align: left; /* Align text left on desktop */
+}
+
+
+.heroContent h1 {
+  font-size: 4rem;
+  font-weight: 900;
+  line-height: 1.2;
+  margin-bottom: 1rem;
+}
+
+.heroContent p {
+  font-size: 1.2rem;
+  margin-bottom: 2rem;
+  color: #555;
+}
+
+.heroButton {
+  padding: 1rem 2rem;
+  font-size: 1rem;
+  font-weight: bold;
+  color: #fff;
+  background-color: #000;
+  border: none;
+  border-radius: 25px;
+  cursor: pointer;
+  transition: background-color 0.3s ease;
+  display: inline-block; /* Allow text-align center on mobile */
+}
+
+.heroButton:hover {
+  background-color: #333;
+}
+
+/* New styles for the hero image */
+.heroImageContainer {
+  flex: 1;
+  display: flex; /* Keep as flex to center image */
+  justify-content: center;
+  align-items: flex-end; /* Align image bottom */
+  min-width: 350px;
+  height: 100%;
+}
+
+.heroImage {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: right;
+  display: block; /* Fix tiny space below image */
+}
+
+
+
+/* 2. Brand Banner - Updated to use logo images */
+.brandBanner {
+  width: 100%;
+  background-color: #000;
+  /* Default responsive padding */
+  padding-top: 2rem;
+  padding-bottom: 2rem;
+  padding-left: clamp(1rem, 5%, 100px);
+  padding-right: clamp(1rem, 5%, 100px);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 1.5rem;
+}
+
+/* Styling for all banner logos */
+.bannerLogo {
+  height: 80px; /* Default height */
+  opacity: 0.8;/* Ensure logos are white */
+}
+
+/* 3. & 4. Product Highlight Sections */
+.productHighlight {
+  padding: 4rem 0; /* Only vertical padding here, horizontal is handled by .container */
+  text-align: center;
+  width: 100%;
+}
+
+/* Section content is centered within .container which has the padding */
+
+
+.sectionTitle {
+  font-size: 2.5rem;
+  font-weight: 800;
+  margin-bottom: 2.5rem;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+}
+
+/* Styling for all section labels */
+.sectionLabel {
+  height: 100px; /* Default height */
+  max-width: 300px; /* Default max-width */
+  margin-bottom: 2rem;
+  object-fit: contain; /* Ensures the whole image fits */
+}
+
+.divider {
+  border: none;
+  height: 1px;
+  background-color: #e0e0e0;
+  margin: 0 0 2.5rem 0;
+}
+
+.productGrid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 1.5rem;
+}
+
+.viewAllButton {
+  padding: 0.7rem 2rem;
+  font-size: 0.9rem;
+  font-weight: bold;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  color: #333;
+  background-color: transparent;
+  border: 1px solid #ddd;
+  border-radius: 5px;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  margin-top: 2.5rem;
+  text-decoration: none;
+}
+
+.viewAllButton:hover {
+  background-color: #f9f9f9;
+  border-color: #ccc;
+}
+
+
+/* 5. "Show More" Button */
+.showMoreContainer {
+  text-align: center;
+  padding: 0 0 4rem;
+}
+
+.showMoreButton {
+  padding: 0.8rem 2.5rem;
+  font-size: 1rem;
+  font-weight: bold;
+  color: #fff;
+  background-color: #333;
+  border: none;
+  border-radius: 5px;
+  cursor: pointer;
+  transition: background-color 0.3s ease;
+}
+
+.showMoreButton:hover {
+  background-color: #000;
+}
+
+
+/* 6. Category Section */
+.categorySection {
+  padding: 4rem 0; /* Only vertical padding */
+  width: 100%;
+}
+
+.categoryWrapper {
+  background-color: #f9f9f9;
+  border-radius: 12px;
+  padding: 2.5rem;
+  text-align: center;
+}
+
+.categoryGrid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 1.5rem;
+}
+
+.categoryCard {
+  position: relative;
+  overflow: hidden;
+  border-radius: 8px;
+  cursor: pointer;
+}
+
+.categoryCard img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+  transition: transform 0.4s ease-out;
+}
+
+.categoryCard:hover img {
+  transform: scale(1.05);
+}
+
+.categoryOverlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  background: linear-gradient(180deg, rgba(0,0,0,0.7) 0%, rgba(0,0,0,0) 100%);
+  padding: 1.5rem 1.5rem 3rem;
+  text-align: left;
+}
+
+.categoryOverlay h3 {
+  color: #fff;
+  font-size: 2rem;
+  font-weight: 700;
+}
+
+/* 7. Customer Reviews */
+.reviewSection {
+  padding: 4rem 0; /* Only vertical padding */
+  width: 100%;
+}
+
+.reviewCarousel {
+  display: flex;
+  overflow-x: auto;
+  gap: 1.5rem; /* Gap between cards */
+  padding: 1rem 0 2rem 0; /* No side padding needed due to container */
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+  scroll-behavior: smooth;
+  scroll-snap-type: x mandatory;
+  /* Add padding to container to see edges */
+   padding-left: clamp(1rem, 5%, 100px);
+   padding-right: clamp(1rem, 5%, 100px);
+   /* Clip content that overflows the container's padding box */
+   margin-left: calc(clamp(1rem, 5%, 100px) * -1);
+   margin-right: calc(clamp(1rem, 5%, 100px) * -1);
+}
+.reviewCarousel::-webkit-scrollbar {
+  display: none;
+}
+
+.reviewCarousel > * {
+  flex-shrink: 0;
+  width: 32%;
+  min-width: 300px;
+  scroll-snap-align: center;
+}
+
+.reviewHeader {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  position: relative;
+  /* Ensure header respects container padding */
+  padding-left: clamp(1rem, 5%, 100px);
+  padding-right: clamp(1rem, 5%, 100px);
+}
+
+.reviewHeader .sectionTitle {
+  margin-bottom: 2.5rem;
+}
+
+.reviewNav {
+  position: absolute;
+  right: clamp(1rem, 5%, 100px); /* Align with container padding */
+  top: 50%;
+  transform: translateY(-50%);
+  display: flex;
+  gap: 0.5rem;
+}
+
+.reviewNav button {
+  background: none; border: 1px solid #ddd; border-radius: 50%;
+  width: 40px; height: 40px; display: flex; align-items: center;
+  justify-content: center; cursor: pointer; color: #555; transition: all 0.3s ease;
+}
+.reviewNav button:hover { background-color: #f9f9f9; color: #000; }
+.reviewNav button svg { width: 20px; height: 20px; }
+
+
+/* --- RESPONSIVENESS --- */
+
+/* Desktop Styles (Screens wider than 991px) */
+@media (min-width: 992px) {
+  .container {
+    padding-left: 100px;
+    padding-right: 100px;
+  }
+  .heroSection {
+    padding-left: 100px;
+    padding-right: 100px;
+  }
+   .brandBanner {
+    padding-left: 100px;
+    padding-right: 100px;
+  }
+  /* Keep .heroContent aligned left on desktop */
+  .heroContent {
+      text-align: left;
+  }
+  /* Adjust review carousel padding/margin for fixed desktop */
+  .reviewCarousel {
+      padding-left: 100px;
+      padding-right: 100px;
+      margin-left: -100px;
+      margin-right: -100px;
+  }
+  .reviewHeader {
+      padding-left: 100px;
+      padding-right: 100px;
+  }
+  .reviewNav {
+      right: 100px; /* Match fixed padding */
+  }
+
+}
+
+@media (max-width: 1200px) {
+  /* Adjust product grid earlier if needed */
+  .productGrid {
+    grid-template-columns: repeat(3, 1fr);
+  }
+}
+
+/* Breakpoint for hiding hero image & other tablet/mobile styles */
+@media (max-width: 991px) { /* Screens smaller than 992px */
+  .heroSection {
+    height: auto;
+    min-height: 50vh;
+    padding: 6rem clamp(1rem, 5%, 100px); /* Use clamp here */
+    align-items: center;
+    text-align: center;
+  }
+
+  .heroContent {
+      margin-bottom: 0;
+      max-width: 600px;
+      text-align: center; /* Center text on mobile */
+      width: 100%;
+  }
+  .heroContent h1 { font-size: 2.8rem; }
+  .heroImageContainer { display: none; }
+
+  .productGrid { grid-template-columns: repeat(2, 1fr); }
+  .categoryGrid { grid-template-columns: 1fr; }
+  .brandBanner { justify-content: center; gap: 1.5rem 2.5rem; }
+  .bannerLogo { height: 30px; }
+  .sectionLabel { height: 40px; max-width: 250px; }
+}
+
+/* Breakpoint for mobile specific styles */
+@media (max-width: 768px) {
+  .heroContent h1 { font-size: 2.2rem; }
+  .heroContent p { font-size: 1rem; }
+  .sectionTitle { font-size: 2rem; }
+
+  .reviewHeader {
+    flex-direction: column;
+    text-align: center;
+    padding-left: clamp(1rem, 5%, 100px); /* Respect container padding */
+    padding-right: clamp(1rem, 5%, 100px);
+  }
+  .reviewNav {
+    position: static;
+    transform: none;
+    margin-top: 1rem;
+    margin-bottom: 1.5rem;
+    justify-content: center;
+  }
+  .reviewHeader .sectionTitle {
+    margin-bottom: 0;
+  }
+
+  .reviewCarousel > * {
+    width: 85%;
+    min-width: unset;
+  }
+}
+
+@media (max-width: 576px) {
+  .productGrid { grid-template-columns: repeat(2, 1fr); }
+  .brandBanner { gap: 1rem 1.5rem; }
+  .bannerLogo { height: 24px; }
+  .sectionLabel { height: 50px; max-width: 200px; }
+  .categoryWrapper { padding: 1.5rem; }
+
+  .reviewCarousel > * {
+    width: 90%;
+  }
+}

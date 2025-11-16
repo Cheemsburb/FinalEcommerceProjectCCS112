@@ -1,0 +1,105 @@
+/* styles/Profile.module.css */
+
+.profileContainer {
+    max-width: 900px;
+    margin: 2rem auto;
+    padding: 2rem;
+    background-color: #ffffff;
+    /* Removed box-shadow and border-radius to match image */
+}
+
+.sectionTitle {
+    font-size: 1.25rem;
+    font-weight: 600;
+    color: #333;
+    margin-top: 2rem;
+    margin-bottom: 1.5rem;
+    /* Add border-bottom if you want, but image doesn't have it */
+}
+
+/* Set first title to have no top margin */
+.sectionTitle:first-of-type {
+    margin-top: 0;
+}
+
+.formGrid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 1.5rem 2rem;
+}
+
+.formGroup {
+    display: flex;
+    flex-direction: column;
+}
+
+.formGroup label {
+    font-size: 0.875rem;
+    font-weight: 600;
+    margin-bottom: 0.5rem;
+    color: #555;
+}
+
+.formGroup input,
+.formGroup textarea {
+    width: 100%;
+    padding: 0.75rem 1rem;
+    font-size: 0.9rem;
+    border: 1px solid #ddd;
+    border-radius: 25px; /* Makes it pill-shaped */
+    box-sizing: border-box;
+    background-color: #ffffff;
+}
+
+.formGroup textarea {
+    border-radius: 16px; /* Textarea looks less rounded */
+    min-height: 100px;
+    resize: vertical;
+}
+
+.formGroup input:focus,
+.formGroup textarea:focus {
+    outline: none;
+    border-color: #007bff;
+    box-shadow: 0 0 0 2px rgba(0, 123, 255, 0.2);
+}
+
+.readOnly {
+    background-color: #f8f9fa; /* Light gray for read-only fields */
+    border-color: #e9ecef;
+    color: #6c757d;
+}
+
+.spanFull {
+    grid-column: 1 / -1; /* Makes element span both columns */
+}
+
+.saveButton {
+    width: 100%;
+    padding: 0.875rem;
+    font-size: 1rem;
+    font-weight: 700;
+    color: #ffffff;
+    background-color: #252525;
+    border: none;
+    border-radius: 30px;
+    cursor: pointer;
+    margin-top: 2.5rem;
+    transition: background-color 0.2s;
+}
+
+.saveButton:hover {
+    background-color: #444;
+}
+
+/* --- Mobile Responsive --- */
+@media (max-width: 768px) {
+    .profileContainer {
+        padding: 1rem;
+    }
+
+    .formGrid {
+        grid-template-columns: 1fr; /* Stack columns on mobile */
+        gap: 1.5rem 0;
+    }
+}

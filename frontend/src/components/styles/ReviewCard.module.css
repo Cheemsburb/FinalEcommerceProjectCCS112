@@ -1,0 +1,41 @@
+.reviewCard {
+  background-color: #fff;
+  border: 1px solid #e0e0e0;
+  border-radius: 12px;
+  padding: 24px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px; /* Space between elements */
+}
+
+.rating {
+  font-size: 1.1rem;
+  margin-bottom: 4px;
+}
+
+.starFilled {
+  color: #ffc107; /* Yellow for filled stars */
+}
+
+.starEmpty {
+  color: #e0e0e0; /* Light gray for empty stars */
+}
+
+.name {
+  font-weight: 600;
+  font-size: 1.05rem;
+  color: #111;
+}
+
+.comment {
+  color: #555;
+  line-height: 1.6;
+  font-size: 0.95rem;
+  flex-grow: 1; /* Allows comment to take up available space */
+}
+
+.date {
+  color: #777;
+  font-size: 0.85rem;
+  margin-top: 12px;
+}

@@ -1,0 +1,5 @@
+/vendor
+/node_modules
+/src/.env
+/src/storage
+/public/storage

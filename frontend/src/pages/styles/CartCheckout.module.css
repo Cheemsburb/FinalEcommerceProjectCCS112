@@ -1,0 +1,367 @@
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+/* General Page Styling */
+.cartPage {
+  padding: 1.5rem 24px; 
+  font-family: sans-serif;
+}
+
+.yourCart {
+  font-size: 2.5rem;
+  font-weight: 900;
+  margin-bottom: 2.5rem;
+  text-align: left;
+}
+
+/* --- Layout --- */
+.cartLayout {
+  display: flex;
+  flex-direction: column; 
+  gap: 2.5rem;
+  width: 100%;
+}
+
+.cartSection {
+  width: 100%;
+  order: 1;
+  background-color: #f8f9fa;
+  border-radius: 16px;
+  padding: 1.5rem;
+}
+
+.checkoutSection {
+  width: 100%;
+  background-color: #f8f9fa;
+  padding: 1.5rem;
+  border-radius: 16px;
+  order: 2;
+}
+
+/* --- Cart List Styling --- */
+.cartList {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+.cartItem {
+  display: flex; 
+  align-items: center; 
+  padding: 1.5rem 0;
+  border-bottom: 1px solid #dee2e6;
+}
+.cartItem:last-child {
+  border-bottom: none;
+}
+
+
+.productImage {
+  width: 100px;
+  height: 100px;
+  object-fit: contain;
+  border-radius: 8px;
+  margin-right: 1.5rem;
+}
+
+.itemDetails {
+  flex-grow: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.itemTitle {
+  font-weight: bold;
+  font-size: 1.1rem;
+}
+
+.itemSize,
+.itemPrice {
+  font-size: 1rem;
+  color: #495057;
+}
+
+.itemPrice {
+  font-weight: bold;
+  margin-top: 0.5rem;
+}
+
+.deleteBtn {
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 0.5rem;
+  margin-left: 1rem;
+  color: #dc3545;
+}
+
+.deleteBtn:hover svg {
+  stroke: #a0202d;
+}
+
+.emptyCart {
+  text-align: center;
+  padding: 3rem 1rem;
+  font-size: 1.2rem;
+  color: #6c757d;
+}
+
+/* --- Checkout Section Styling --- */
+.orderSummary {
+  font-size: 1.5rem;
+  font-weight: bold;
+  margin-top: 0;
+  margin-bottom: 1.5rem;
+}
+
+.summaryDetails p {
+  display: flex;
+  justify-content: space-between;
+  margin-bottom: 1rem;
+  font-size: 1rem;
+  color: #495057;
+}
+
+.summaryDetails p span:first-child {
+  color: #6c757d;
+}
+
+.discountAmount {
+  color: #dc3545;
+  font-weight: bold;
+}
+
+.summaryDivider {
+  border: none;
+  border-top: 1px solid #dee2e6;
+  margin: 1.5rem 0;
+}
+
+.totalAmount {
+  font-size: 1.1rem !important;
+  color: #212529 !important;
+}
+.totalAmount strong {
+  font-weight: 900;
+}
+
+.promoSection {
+  display: flex;
+  margin-top: 2rem;
+  margin-bottom: 1.5rem;
+}
+
+.promoInput {
+  flex-grow: 1;
+  padding: 0.75rem 1rem;
+  border: 1px solid #ced4da;
+  background-color: #e9ecef;
+  border-radius: 25px;
+  margin-right: 10px;
+  font-size: 1rem;
+  color: #495057;
+  min-width: 0; /* Allows the input to shrink */
+}
+.promoInput:focus {
+  outline: none;
+  border-color: #adb5bd;
+  background-color: #fff;
+}
+.promoInput::placeholder {
+  color: #adb5bd;
+}
+.promoInput.success { color: green; }
+.promoInput.error { color: red; }
+
+.applyBtn {
+  padding: 0.75rem 1rem; /* Reduced padding */
+  background-color: #000000;
+  color: white;
+  border: none;
+  border-radius: 25px;
+  cursor: pointer;
+  font-weight: bold;
+  transition: background-color 0.2s;
+  z-index: 2;
+  flex-shrink: 0; /* Prevents the button from shrinking */
+}
+.applyBtn:hover { background-color: #212529; }
+.applyBtn:disabled { background-color: #adb5bd; cursor: not-allowed; }
+
+.orderBtn {
+  width: 100%;
+  padding: 1rem;
+  background-color: #000000;
+  color: white;
+  border: none;
+  border-radius: 50px;
+  font-size: 1.1rem;
+  font-weight: bold;
+  cursor: pointer;
+  transition: background-color 0.2s;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+}
+.orderBtn:hover { background-color: #212529; }
+.orderBtn svg {
+  margin-top: 2px;
+}
+
+/* --- Breadcrumb Styling --- */
+.breadcrumbBar {
+  margin-bottom: 1.5rem;
+  border-bottom: none;
+  padding-bottom: 0;
+}
+.breadcrumb {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: flex;
+  gap: 0.5rem;
+  font-size: 0.9rem;
+  color: #6c757d;
+}
+.breadcrumb__item a {
+  color: #6c757d;
+  text-decoration: none;
+}
+.breadcrumb__item a:hover {
+  text-decoration: underline;
+}
+.breadcrumb__item::after {
+  content: '>';
+  margin-left: 0.5rem;
+  color: #ced4da;
+}
+.breadcrumb__item:last-child {
+  color: #212529;
+  font-weight: bold;
+}
+.breadcrumb__item:last-child::after {
+  content: '';
+}
+
+/* --- Modal Styling (Adjust as needed) --- */
+.modalOverlay {
+  position: fixed; top: 0; left: 0; right: 0; bottom: 0;
+  background-color: rgba(0, 0, 0, 0.6); display: flex;
+  align-items: center; justify-content: center; z-index: 1000;
+}
+.modalContent {
+  background-color: white; padding: 2rem; border-radius: 8px;
+  width: 90%; max-width: 500px; box-shadow: 0 5px 15px rgba(0,0,0,0.2);
+}
+.modalContent h2 { margin-top: 0; margin-bottom: 1.5rem; text-align: center; }
+.modalContent form label { display: block; margin-bottom: 1rem; font-weight: bold; }
+.modalContent form input, .modalContent form select {
+  width: 100%; padding: 0.75rem; margin-top: 0.25rem; border: 1px solid #ccc;
+  border-radius: 4px; font-size: 1rem;
+}
+.modalButtons { display: flex; justify-content: flex-end; gap: 1rem; margin-top: 2rem; }
+.modalButtons button {
+  padding: 0.75rem 1.5rem; border: none; border-radius: 4px; cursor: pointer;
+  font-size: 1rem; font-weight: bold;
+}
+.cancelBtn { background-color: #eee; color: #333; }
+.confirmBtn { background-color: #000; color: white; }
+
+
+/* --- Delete Confirmation Modal --- */
+.confirmModalContent {
+  background-color: white;
+  padding: 2rem;
+  border-radius: 16px; /* Match other containers */
+  width: 90%;
+  max-width: 420px; /* Smaller width */
+  box-shadow: 0 5px 15px rgba(0,0,0,0.2);
+  text-align: center;
+}
+
+.confirmTitle {
+  margin-top: 0;
+  margin-bottom: 1rem;
+  font-size: 1.5rem;
+  font-weight: 700;
+}
+
+.confirmText {
+  margin-bottom: 2rem;
+  font-size: 1rem;
+  color: #495057;
+  line-height: 1.5;
+}
+
+.confirmButtons {
+  display: flex;
+  justify-content: center;
+  gap: 1rem;
+}
+
+/* New button styles for this modal */
+.confirmBtnSecondary,
+.confirmBtnPrimary {
+  padding: 0.75rem 1rem;
+  border: none;
+  border-radius: 50px;
+  cursor: pointer;
+  font-size: 1rem;
+  font-weight: bold;
+  transition: all 0.2s ease;
+  flex: 1;
+  max-width: 150px;
+}
+
+.confirmBtnSecondary {
+  background-color: #eee;
+  color: #333;
+  border: 1px solid #ccc;
+}
+.confirmBtnSecondary:hover {
+  background-color: #e0e0e0;
+}
+
+.confirmBtnPrimary {
+  background-color: #dc3545; /* Red for delete */
+  color: white;
+  border: 1px solid #dc3545;
+}
+.confirmBtnPrimary:hover {
+  background-color: #c82333; /* Darker red */
+}
+
+
+/* --- RESPONSIVENESS --- */
+@media (min-width: 992px) { 
+  .cartPage {
+    padding: 2.5rem 100px;
+  }
+
+  .cartLayout {
+    flex-direction: row;
+    align-items: flex-start;
+    gap: 3rem;
+  }
+
+  .cartSection {
+    flex: 6; 
+    order: 1;
+    padding: 2rem;
+  }
+
+  .checkoutSection {
+    flex: 4; 
+    order: 2;
+    position: sticky;
+    top: 2rem;
+    padding: 2rem;
+  }
+}

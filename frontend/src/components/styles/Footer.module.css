@@ -1,0 +1,175 @@
+/* styles/Footer.module.css */
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+.footer {
+    width: 100%;
+    background-color: #F5F5F5; 
+    font-family: Arial, sans-serif;
+    padding: 80px 24px 40px; 
+}
+
+.contentWrapper {
+    width: 100%;
+}
+
+/* --- Main Grid Layout --- */
+.footerGrid {
+    display: grid;
+    grid-template-columns: 1.5fr 1fr 1fr 1fr;
+    gap: 40px;
+    padding-bottom: 40px;
+}
+
+
+.logoText {
+    font-size: 1.7rem;
+    font-weight: 900;
+    color: #000000;
+    margin-bottom: 15px;
+    letter-spacing: -1px;
+}
+
+.tagline {
+    font-size: 0.9rem;
+    color: #555555;
+    line-height: 1.5;
+    margin-bottom: 20px;
+    max-width: 250px;
+}
+
+/* Social Media Icons */
+.socialIcons {
+    display: flex;
+    gap: 15px;
+    margin-top: 20px;
+}
+
+.socialLink {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 30px; 
+    height: 30px; 
+    border-radius: 50%;
+    border: 3px solid #000000; /* This is an outline border */
+}
+
+.socialIcon {
+    /* Made icon smaller to fit inside 30px circle with 3px border */
+    width: 30px; 
+    height: 30px; 
+}
+
+.linkTitle {
+    font-size: 1rem;
+    font-weight: bold;
+    color: #000000;
+    margin-bottom: 15px;
+}
+
+.linkList {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+}
+
+.linkItem {
+    margin-bottom: 10px;
+}
+
+.link {
+    text-decoration: none;
+    font-size: 0.9rem;
+    color: #555555;
+    transition: color 0.2s;
+}
+
+.link:hover {
+    color: #000000;
+}
+
+/* --- Bottom Bar --- */
+.bottomBar {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    border-top: 1px solid #E0E0E0; 
+    padding-top: 30px;
+    margin-top: 30px; 
+}
+
+.copyright {
+    font-size: 0.85rem;
+    color: #555555;
+    margin: 0;
+}
+
+/* Payment Icons */
+.paymentIcons {
+    display: flex;
+    gap: 10px;
+    align-items: center;
+}
+
+.paymentIcon {
+    height: 35px; 
+    width: auto;
+    opacity: 0.8;
+}
+
+/* --- RESPONSIVENESS --- */
+
+@media (min-width: 992px) {
+  .footer {
+    padding: 80px 100px 40px;
+  }
+}
+
+@media (max-width: 991px) { 
+    .footerGrid {
+        grid-template-columns: 1fr 1fr;
+        gap: 30px;
+    }
+
+    .aboutSection {
+        grid-column: span 2; 
+        margin-bottom: 1rem; 
+    }
+
+    .bottomBar {
+        flex-direction: column; 
+        align-items: center; 
+        gap: 15px;
+    }
+     .copyright {
+        text-align: center; 
+    }
+    .paymentIcons {
+        justify-content: center; 
+    }
+}
+
+@media (max-width: 576px) { 
+    .footerGrid {
+        /* CHANGED: Set to 3 columns for the link sections */
+        grid-template-columns: 1fr 1fr 1fr;
+        gap: 20px; /* Reduced gap for mobile */
+    }
+    .aboutSection {
+        /* CHANGED: Span all 3 columns to take the first row */
+        grid-column: 1 / -1; 
+        /* ADDED: Centering for logo, tagline, and social icons */
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        text-align: center;
+    }
+     .tagline {
+        max-width: none; 
+    }
+}

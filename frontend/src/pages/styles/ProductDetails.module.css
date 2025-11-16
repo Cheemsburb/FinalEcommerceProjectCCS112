@@ -1,0 +1,397 @@
+.detailsPage {
+  padding: 50px 80px;
+  background: #fff;
+}
+
+.topSection {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 80px; 
+  margin-bottom: 60px;
+  align-items: flex-start;
+}
+
+.mainImage {
+  flex: 1;
+  max-width: 550px;
+  min-width: 300px;
+  background: linear-gradient(145deg, #eaeaea, #f9f9f9);
+  border-radius: 16px;
+  aspect-ratio: 1 / 1;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+  transition: transform 0.4s ease;
+}
+
+.mainImage:hover {
+  transform: scale(1.02);
+}
+
+.info {
+  flex: 1;
+  max-width: 600px;
+  min-width: 300px;
+  display: flex;
+  flex-direction: column;
+}
+
+.info h2 {
+  font-size: 2.5rem;
+  font-weight: 800;
+  margin-bottom: 10px;
+}
+
+.brand {
+  font-size: 1rem;
+  color: #777;
+  margin-top: 8px;
+  letter-spacing: 0.5px;
+}
+
+.price {
+  font-size: 2.2rem;
+  font-weight: bold;
+  margin: 10px 0 15px;
+  color: #111;
+}
+
+.rating {
+  color: #777;
+  font-size: 1.1rem;
+  margin-bottom: 5px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-weight: 500;
+}
+
+.starsWrapper {
+  font-size: 1.4rem;
+  line-height: 1;
+}
+
+.starFilled {
+  color: #ffc107;
+}
+
+.starEmpty {
+  color: #e0e0e0;
+}
+
+.ratingText {
+  color: #777;
+  font-weight: 500;
+  font-size: 1rem;
+}
+
+.descriptionText {
+  margin: 20px 0 30px;
+  color: #444;
+  line-height: 1.6;
+  font-size: 1.05rem;
+}
+
+.sizeSelection {
+  margin-top: 20px;
+  margin-bottom: 40px;
+}
+
+.sizeTitle {
+  font-size: 1rem;
+  color: #777;
+  margin-bottom: 15px;
+}
+
+.sizeOptions {
+  display: flex;
+  gap: 15px;
+}
+
+.sizeButton {
+  background: #fff;
+  color: #111;
+  padding: 10px 20px;
+  border: 1px solid #ccc;
+  border-radius: 50px;
+  cursor: pointer;
+  font-size: 0.95rem;
+  font-weight: 600;
+  transition: all 0.2s ease;
+  min-width: 80px;
+}
+
+.sizeButton:hover {
+  border-color: #000;
+}
+
+.sizeButton.selected {
+  background: #000;
+  color: #fff;
+  border-color: #000;
+}
+
+.buttons {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 15px;
+  margin-top: 20px;
+}
+
+.addToCart {
+  background: #e0e0e0;
+  color: #111;
+  padding: 15px 30px;
+  border: none;
+  border-radius: 50px;
+  cursor: pointer;
+  font-size: 1.1rem;
+  font-weight: 600;
+  transition: all 0.22s ease;
+  flex: 1;
+  min-width: 160px;
+}
+
+.addToCart:hover {
+  background: #d0d0d0;
+  transform: translateY(-2px);
+}
+
+.buyNowBtn {
+  background: #000;
+  color: #fff;
+  padding: 15px 30px;
+  border: none;
+  border-radius: 50px;
+  cursor: pointer;
+  font-size: 1.1rem;
+  font-weight: 700;
+  transition: background 0.22s ease, transform 0.22s ease;
+  flex: 1;
+  min-width: 160px;
+}
+
+.buyNowBtn:hover {
+  background: #333;
+  transform: translateY(-2px);
+}
+
+.bottomSection {
+  border-top: 1px solid #e0e0e0;
+  padding-top: 40px;
+}
+
+.reviewsContainer {
+  padding: 40px 0;
+}
+
+.reviewsTitleWrapper {
+  text-align: center;
+  margin-bottom: 40px;
+}
+
+.reviewsTitle {
+  font-size: 1.8rem;
+  font-weight: 700;
+  display: inline-block;
+  position: relative;
+  padding-bottom: 10px;
+}
+
+.reviewsTitle::after {
+  content: '';
+  position: absolute;
+  bottom: 0;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 60px;
+  height: 3px;
+  background-color: #111;
+}
+
+.reviewsHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 24px;
+}
+
+.allReviewsText {
+  font-size: 1.2rem;
+  font-weight: 600;
+  color: #333;
+}
+
+.writeReviewBtn {
+  background-color: #111;
+  color: #fff;
+  border: none;
+  border-radius: 50px;
+  padding: 10px 20px;
+  font-size: 0.9rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background-color 0.2s ease;
+}
+
+.writeReviewBtn:hover {
+  background-color: #444;
+}
+
+.reviewsGrid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 24px;
+  margin-bottom: 40px;
+}
+
+.loadMoreBtn {
+  display: block;
+  margin: 0 auto;
+  background-color: #fff;
+  color: #111;
+  border: 1px solid #ccc;
+  border-radius: 50px;
+  padding: 12px 24px;
+  font-size: 0.95rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.loadMoreBtn:hover {
+  background-color: #f5f5f5;
+  border-color: #111;
+}
+
+.youMightAlsoLike {
+  margin-top: 60px;
+  text-align: center;
+  margin-left: -80px; 
+  margin-right: -80px;
+  padding: 40px 100px 0;
+}
+
+.youMightAlsoLikeTitle {
+  font-size: 2.2rem;
+  font-weight: 800;
+  color: #111;
+  margin-bottom: 40px;
+}
+
+.suggestionsGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+  gap: 20px;
+  justify-items: center;
+}
+
+.suggestionCardWrapper {
+  position: relative;
+  width: 100%;
+}
+
+.toast {
+  position: fixed;
+  top: 20px;
+  right: 20px;
+  background: #111;
+  color: #fff;
+  padding: 12px 20px;
+  border-radius: 8px;
+  font-size: 0.95rem;
+  font-weight: 500;
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.15);
+  z-index: 2000;
+  opacity: 0;
+  animation: fadeInOut 2s ease forwards;
+}
+
+@keyframes fadeInOut {
+  0% {
+    opacity: 0;
+    transform: translateY(-10px);
+  }
+  10% {
+    opacity: 1;
+    transform: translateY(0);
+  }
+  90% {
+    opacity: 1;
+    transform: translateY(0);
+  }
+  100% {
+    opacity: 0;
+    transform: translateY(-10px);
+  }
+}
+
+@media (max-width: 1200px) {
+  .suggestionsGrid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+@media (max-width: 900px) {
+  .detailsPage {
+    padding: 30px;
+  }
+  .topSection {
+    flex-direction: column;
+    gap: 30px;
+    align-items: center; /* ADDED: Centers the image and info box */
+  }
+  .info h2 {
+    font-size: 2rem;
+  }
+  .price {
+    font-size: 1.8rem;
+  }
+  .descriptionText {
+    font-size: 1rem;
+  }
+  
+  /* ADDED: Centers the size title */
+  .sizeTitle {
+    text-align: center;
+  }
+  /* ADDED: Centers the size buttons */
+  .sizeOptions {
+    justify-content: center;
+  }
+
+  .addToCart,
+  .buyNowBtn {
+    width: 100%;
+    text-align: center;
+    flex: none;
+  }
+  .toast {
+    top: auto;
+    bottom: 20px;
+    right: 50%;
+    transform: translateX(50%);
+    width: max-content;
+  }
+  .reviewsGrid {
+    grid-template-columns: 1fr;
+  }
+  .youMightAlsoLikeTitle {
+    font-size: 1.8rem;
+  }
+  .youMightAlsoLike {
+    margin-left: 0;
+    margin-right: 0;
+    padding-left: 0;
+    padding-right: 0;
+  }
+  .suggestionsGrid {
+    /* CHANGED: Set to 2 columns for mobile */
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+@media (max-width: 480px) {
+  .detailsPage {
+    padding: 20px;
+  }
+}

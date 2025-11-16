@@ -1,0 +1,11 @@
+node_modules
+.dockerignore
+docker-compose.prod.yml
+docker-compose.yml
+Dockerfile
+nginx.conf
+package-lock.json
+package.json
+README.md
+start-dev.ps1
+start-prod.ps1
