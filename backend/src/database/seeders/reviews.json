@@ -1,0 +1,62 @@
+[
+  {
+    "user_id": 1,
+    "product_id": 5,
+    "rating": 5,
+    "description": "Excellent quality, exceeded my expectations!"
+  },
+  {
+    "user_id": 2,
+    "product_id": 12,
+    "rating": 4,
+    "description": "Very good product, worth the price."
+  },
+  {
+    "user_id": 3,
+    "product_id": 7,
+    "rating": 3,
+    "description": "It works fine but could be improved."
+  },
+  {
+    "user_id": 4,
+    "product_id": 20,
+    "rating": 5,
+    "description": "Absolutely loved it! Highly recommended."
+  },
+  {
+    "user_id": 5,
+    "product_id": 2,
+    "rating": 4,
+    "description": "Good quality and fast shipping."
+  },
+  {
+    "user_id": 2,
+    "product_id": 25,
+    "rating": 2,
+    "description": "Not the best experience. Had some issues."
+  },
+  {
+    "user_id": 3,
+    "product_id": 18,
+    "rating": 5,
+    "description": "Fantastic product. Will buy again!"
+  },
+  {
+    "user_id": 4,
+    "product_id": 29,
+    "rating": 4,
+    "description": "Solid and reliable. Pretty satisfied."
+  },
+  {
+    "user_id": 1,
+    "product_id": 9,
+    "rating": 3,
+    "description": "Average quality. You get what you pay for."
+  },
+  {
+    "user_id": 5,
+    "product_id": 14,
+    "rating": 5,
+    "description": "Perfect item! No complaints at all."
+  }
+]

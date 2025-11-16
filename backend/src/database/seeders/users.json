@@ -1,0 +1,37 @@
+[
+  {
+    "first_name": "Admin",
+    "last_name": "User",
+    "email": "admin@example.com",
+    "password": "$2y$10$JjRghPWxErH4mF4aI7P2DOq0xpoEvvEXfyjF4Go4fU5mGG8v80dVC",
+    "role": "admin"
+  },
+  {
+    "first_name": "Correllene",
+    "last_name": "Dela Cruz",
+    "email": "juan@example.com",
+    "password": "$2y$10$B8LFzdgS8CIaQXkkpFmS6u2GNfCiOqLz2q0eULFj03tPH9RmXZP6u",
+    "role": "customer"
+  },
+  {
+    "first_name": "Josua",
+    "last_name": "Santos",
+    "email": "maria@example.com",
+    "password": "$2y$10$7xLnSAVV9SRVnveHhQWvjeWUz/Y9Fv5Rg4C8YctDQC5MZay6xW6GG",
+    "role": "customer"
+  },
+  {
+    "first_name": "Benedic",
+    "last_name": "Reyes",
+    "email": "mark@example.com",
+    "password": "$2y$10$ZPpDUC1Lr5y8kIlqKLNwzeHLzoaZVmwpYC0skLa0C3f7nq45m2G8G",
+    "role": "customer"
+  },
+  {
+    "first_name": "Gladwyn",
+    "last_name": "Garcia",
+    "email": "liza@example.com",
+    "password": "$2y$10$pv3tKRiSmbzAPgmdQmGzAOjKTOK9l5pWepA31SOxVw6RzPXMXuI1e",
+    "role": "customer"
+  }
+]
