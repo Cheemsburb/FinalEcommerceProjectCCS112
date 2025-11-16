@@ -7,6 +7,7 @@ use App\Http\Controllers\Api\UserController;      // <-- Add \Api
 use App\Http\Controllers\Api\CartController;      // <-- Add \Api
 use App\Http\Controllers\Api\OrderController;     // <-- Add \Api
 use App\Http\Controllers\Api\ReviewController;    // <-- Add \Api
+use App\Http\Controllers\Api\AddressController;
 
 // ... (rest of your routes)
 
@@ -64,7 +65,13 @@ Route::middleware('auth:sanctum')->group(function () {
     // A user must be logged in to post a review
     Route::post('/products/{product}/reviews', [ReviewController::class, 'store']);
 
+    // --- Address ---
+    // Get all my addresses, create a new address
+    Route::apiResource('/addresses', AddressController::class); 
     
+    // A custom route to set an address as the default
+    Route::patch('/addresses/{address}/set-default', [AddressController::class, 'setAsDefault']);
+
     // ===============================================
     // === ADMIN-ONLY ROUTES ===
     // ===============================================
