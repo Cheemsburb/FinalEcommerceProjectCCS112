@@ -1,9 +1,20 @@
-//Sarmiento
-import React, { useState } from "react";
+// Sarmiento
+import React, { useEffect, useState } from "react";
 import styles from "./styles/CartCheckout.module.css";
 import images from "../assets/imageLoader";
 
-function CartCheckout({ cartItems, setCartItems, clearCart, removeFromCart }) {
+const API = "http://localhost:8000/api";
+
+// Mock cart data for testing without a token
+const fallbackCart = [
+  { id: 1, brand: "Rolex", model: "Submariner", case_size: "41mm", price: 13400, image_link: "rolex-subm-dote.png" },
+  { id: 2, brand: "Casio", model: "G-Shock", case_size: "44mm", price: 8000, image_link: "casio-gshock.png" },
+  { id: 3, brand: "Omega", model: "Seamaster", case_size: "42mm", price: 15000, image_link: "omega-seamaster.png" },
+];
+
+function CartCheckout() {
+  const [cartItems, setCartItems] = useState([]);
+  const [loading, setLoading] = useState(true);
 
   const [form, setForm] = useState({
     name: "",
@@ -12,47 +23,73 @@ function CartCheckout({ cartItems, setCartItems, clearCart, removeFromCart }) {
     payment: "",
   });
 
-  // --- (other states are unchanged) ---
   const [promoCode, setPromoCode] = useState("");
   const [promoApplied, setPromoApplied] = useState(false);
   const [discountRate, setDiscountRate] = useState(0);
   const [promoMessage, setPromoMessage] = useState("");
   const [promoStatus, setPromoStatus] = useState("");
-  const [showForm, setShowForm] = useState(false);
 
-  // 1. ADD NEW STATE for the confirmation modal
-  // It will store the ID of the item to be removed
+  const [showForm, setShowForm] = useState(false);
   const [itemToRemove, setItemToRemove] = useState(null);
 
+  const token = localStorage.getItem("token");
+  const isLoggedIn = !!token; // login check
+
+  // Fetch cart items
+  useEffect(() => {
+    if (!token) {
+      // No token: use fallback cart
+      setCartItems(fallbackCart);
+      setLoading(false);
+    } else {
+      fetchCart();
+    }
+  }, [token]);
+
+  const fetchCart = async () => {
+    try {
+      const res = await fetch(`${API}/cart`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      const data = await res.json();
+      setCartItems(data);
+    } catch (err) {
+      console.error("Error fetching cart:", err);
+      setCartItems(fallbackCart); // fallback if API fails
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const removeFromCart = async (id) => {
+    if (!token) {
+      setCartItems(cartItems.filter((i) => i.id !== id));
+      return;
+    }
+
+    try {
+      await fetch(`${API}/cart/${id}`, {
+        method: "DELETE",
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      setCartItems(cartItems.filter((i) => i.id !== id));
+    } catch (err) {
+      console.error("Error deleting:", err);
+    }
+  };
+
+  const removeItem = (id) => setItemToRemove(id);
+  const handleConfirmRemove = () => {
+    removeFromCart(itemToRemove);
+    setItemToRemove(null);
+  };
+  const handleCancelRemove = () => setItemToRemove(null);
+
   const deliveryFee = cartItems.length > 0 ? 10000 : 0;
-  
-  // --- (calculations are unchanged) ---
-  const getSubtotal = () =>
-    cartItems.reduce((sum, item) => sum + item.price * 1, 0);
+  const getSubtotal = () => cartItems.reduce((sum, item) => sum + item.price * 1, 0);
   const getDiscount = () => getSubtotal() * discountRate;
   const getTotal = () => getSubtotal() - getDiscount() + deliveryFee;
 
-  // 2. UPDATE removeItem to open the modal
-  const removeItem = (id) => {
-    // This no longer shows window.confirm
-    // It just sets the ID of the item we're thinking about deleting
-    setItemToRemove(id);
-  };
-
-  // 3. ADD new handler for confirming the removal
-  const handleConfirmRemove = () => {
-    if (itemToRemove) {
-      removeFromCart(itemToRemove);
-    }
-    setItemToRemove(null); // Close the modal
-  };
-
-  // 4. ADD new handler for canceling the removal
-  const handleCancelRemove = () => {
-    setItemToRemove(null); // Close the modal
-  };
-
-  // --- (other handlers are unchanged) ---
   const showMessage = (msg, status) => {
     setPromoMessage(msg);
     setPromoStatus(status);
@@ -65,43 +102,51 @@ function CartCheckout({ cartItems, setCartItems, clearCart, removeFromCart }) {
   const applyPromo = () => {
     const code = promoCode.trim().toUpperCase();
     if (promoApplied) {
-      showMessage("Promo code already applied.", "error");
+      showMessage("Promo code already used.", "error");
       return;
     }
     if (code === "WTCH.CO") {
-      setDiscountRate(0.1); // 10% discount
+      setDiscountRate(0.1);
       setPromoApplied(true);
-      showMessage("You got a 10% discount!", "success");
+      showMessage("10% Discount Applied!", "success");
     } else {
-      showMessage("Invalid promo code. Try again.", "error");
+      showMessage("Invalid promo code.", "error");
     }
   };
 
-  const handleChange = (e) => {
+  const handleChange = (e) =>
     setForm({ ...form, [e.target.name]: e.target.value });
-  };
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    console.log(
-      `Checkout successful! Thank you, ${form.name}! Your order is being processed.`
-    );
-    console.log("Order Details:", cartItems);
-    console.log("Form Data:", form);
-    console.log("Total Paid:", getTotal().toLocaleString('en-PH', { style: 'currency', currency: 'PHP' }));
 
-    alert(
-      `✅ Checkout successful!\n\nThank you, ${form.name}! Your order is being processed.`
-    );
+    if (!isLoggedIn) {
+      alert("Please log in to complete checkout.");
+      return;
+    }
+
+    alert(`Checkout successful!\n\nThank you, ${form.name}! Your order is being processed.`);
+
     setShowForm(false);
-    clearCart();
     setForm({ name: "", address: "", contact: "", payment: "" });
     setPromoCode("");
     setPromoApplied(false);
     setDiscountRate(0);
     setPromoMessage("");
     setPromoStatus("");
+
+    try {
+      await fetch(`${API}/cart/clear`, {
+        method: "DELETE",
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      setCartItems([]);
+    } catch (err) {
+      console.error("Error clearing cart:", err);
+    }
   };
+
+  if (loading) return <p>Loading cart...</p>;
 
 
   return (
