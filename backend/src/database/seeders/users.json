@@ -2,36 +2,36 @@
   {
     "first_name": "Admin",
     "last_name": "User",
-    "email": "admin@example.com",
-    "password": "$2y$10$JjRghPWxErH4mF4aI7P2DOq0xpoEvvEXfyjF4Go4fU5mGG8v80dVC",
+    "email": "admin@gmail.com",
+    "password": "adminpass",
     "role": "admin"
   },
   {
     "first_name": "Correllene",
     "last_name": "Dela Cruz",
-    "email": "juan@example.com",
-    "password": "$2y$10$B8LFzdgS8CIaQXkkpFmS6u2GNfCiOqLz2q0eULFj03tPH9RmXZP6u",
+    "email": "ira@gmail.com",
+    "password": "irapass",
     "role": "customer"
   },
   {
     "first_name": "Josua",
     "last_name": "Santos",
-    "email": "maria@example.com",
-    "password": "$2y$10$7xLnSAVV9SRVnveHhQWvjeWUz/Y9Fv5Rg4C8YctDQC5MZay6xW6GG",
+    "email": "josua@gmail.com",
+    "password": "josuapass",
     "role": "customer"
   },
   {
     "first_name": "Benedic",
     "last_name": "Reyes",
-    "email": "mark@example.com",
-    "password": "$2y$10$ZPpDUC1Lr5y8kIlqKLNwzeHLzoaZVmwpYC0skLa0C3f7nq45m2G8G",
+    "email": "benedic@gmail.com",
+    "password": "benedicpass",
     "role": "customer"
   },
   {
     "first_name": "Gladwyn",
     "last_name": "Garcia",
-    "email": "liza@example.com",
-    "password": "$2y$10$pv3tKRiSmbzAPgmdQmGzAOjKTOK9l5pWepA31SOxVw6RzPXMXuI1e",
+    "email": "glad@gmail.com",
+    "password": "gladpass",
     "role": "customer"
   }
 ]
