@@ -1,18 +1,13 @@
 import React, { useState, useEffect } from 'react';
 import style from './styles/Login.module.css';
-import pic1 from "../assets/designs/login/submariner.jpg"
-import pic2 from "../assets/designs/login/submariner2.jpg"
-import { Link } from 'react-router-dom';
-// Member 5: Gladwyn Sencil
-// Original images array
+import pic1 from "../assets/designs/login/submariner.jpg";
+import pic2 from "../assets/designs/login/submariner2.jpg";
+import { Link, useNavigate } from 'react-router-dom';
+
 const images = [pic1, pic2];
-// Create a "filmstrip" by duplicating the first image at the end
 const displayImages = [pic1, pic2, pic1];
+const TRANSITION_DURATION = 700; 
 
-// This is the duration of our CSS transition. It must match the CSS.
-const TRANSITION_DURATION = 700; // 0.7s
-
-// SVG Icon for showing password
 const EyeOpenIcon = () => (
   <svg
     xmlns="http://www.w3.org/2000/svg"
@@ -30,7 +25,6 @@ const EyeOpenIcon = () => (
   </svg>
 );
 
-// SVG Icon for hiding password
 const EyeClosedIcon = () => (
   <svg
     xmlns="http://www.w3.org/2000/svg"
@@ -48,48 +42,81 @@ const EyeClosedIcon = () => (
   </svg>
 );
 
-function Login() {
+function Login({ signIn }) {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
+  const [error, setError] = useState('');
+  const [isLoading, setIsLoading] = useState(false);
   
   const [activeIndex, setActiveIndex] = useState(0);
-  const [isJumping, setIsJumping] = useState(false); // This state controls the "jump"
+  const [isJumping, setIsJumping] = useState(false); 
 
-  // 5-second interval logic
+  const navigate = useNavigate();
+
   useEffect(() => {
     const interval = setInterval(() => {
-      // Just move to the next slide
       setActiveIndex(prev => prev + 1);
-    }, 5000); // 5000 milliseconds = 5 seconds
+    }, 5000); 
     return () => clearInterval(interval);
   }, []);
 
-  // This effect handles the "jump" back to the start
   useEffect(() => {
-    // We only care about this when we've just slid to the *last* image (the duplicate)
     if (activeIndex === displayImages.length - 1) {
-      // Wait for the slide animation (0.7s) to finish
       const jumpTimer = setTimeout(() => {
-        setIsJumping(true); // Disable transitions
-        setActiveIndex(0); // Instantly jump to the first slide
+        setIsJumping(true); 
+        setActiveIndex(0); 
       }, TRANSITION_DURATION);
       return () => clearTimeout(jumpTimer);
     }
-
-    // This re-enables transitions *after* the jump has happened
+  
     if (activeIndex === 0 && isJumping) {
       const reenableTimer = setTimeout(() => {
         setIsJumping(false);
-      }, 50); // A tiny delay to let React render the jump
+      }, 50); 
       return () => clearTimeout(reenableTimer);
     }
   }, [activeIndex, isJumping]);
 
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    console.log('Login attempt:', { email, password });
+    setError('');
+    setIsLoading(true);
+
+    try {
+      // Call the backend API
+      const response = await fetch('http://localhost:8000/api/login', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Accept': 'application/json',
+        },
+        body: JSON.stringify({ email, password }),
+      });
+
+      const data = await response.json();
+
+      if (response.ok) {
+        console.log('Login successful:', data);
+        
+        // Pass the token and user object back to your App component
+        if (signIn) {
+            signIn(data.token, data.user);
+        }
+        
+        // Navigate to home or dashboard
+        navigate('/');
+      } else {
+        // Handle API errors (like wrong password)
+        setError(data.message || 'Login failed. Please check your credentials.');
+      }
+    } catch (err) {
+      console.error('Login error:', err);
+      setError('Unable to connect to the server.');
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   return (
@@ -98,10 +125,12 @@ function Login() {
         <div className={style.formSide}>
           <h1>Login</h1>
           <p className={style.subtitle}>
-            Do not have an account. <Link to="/register">create a new one.</Link>
+            Do not have an account? <Link to="/register">create a new one.</Link>
           </p>
 
           <form onSubmit={handleSubmit}>
+            {error && <div style={{ color: 'red', marginBottom: '10px' }}>{error}</div>}
+            
             <div className={style.formGroup}>
               <label htmlFor="email">Enter Your Email Or Phone</label>
               <input
@@ -111,6 +140,7 @@ function Login() {
                 onChange={(e) => setEmail(e.target.value)}
                 placeholder="michael.joe@xmail.com"
                 required
+                disabled={isLoading}
               />
             </div>
 
@@ -124,20 +154,27 @@ function Login() {
                   onChange={(e) => setPassword(e.target.value)}
                   placeholder="••••••••"
                   required
+                  disabled={isLoading}
                 />
                 <button
                   type="button"
                   aria-label={showPassword ? "Hide password" : "Show password"}
                   className={style.eyeIcon}
                   onClick={() => setShowPassword(!showPassword)}
+                  disabled={isLoading}
                 >
                   {showPassword ? <EyeClosedIcon /> : <EyeOpenIcon />}
                 </button>
               </div>
             </div>
 
-            <button type="submit" className={style.loginButton}>
-              Login
+            <button 
+              type="submit" 
+              className={style.loginButton} 
+              disabled={isLoading}
+              style={{ opacity: isLoading ? 0.7 : 1 }}
+            >
+              {isLoading ? 'Logging in...' : 'Login'}
             </button>
           </form>
 
@@ -147,11 +184,9 @@ function Login() {
         </div>
 
         <div className={style.imageSide}>
-          {/* We map over the displayImages (with 3 items) */}
           {displayImages.map((img, index) => (
             <div
               key={index}
-              // We add the .noTransition class when we're jumping
               className={`${style.imageSlide} ${isJumping ? style.noTransition : ''}`}
               style={{
                 backgroundImage: `url(${img})`,
