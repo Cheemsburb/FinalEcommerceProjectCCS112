@@ -12,7 +12,7 @@ function CartCheckout({ cartItems, setCartItems, clearCart, removeFromCart }) {
     payment: "",
   });
 
-  // --- (other states are unchanged) ---
+// --- (other states are unchanged) ---
   const [promoCode, setPromoCode] = useState("");
   const [promoApplied, setPromoApplied] = useState(false);
   const [discountRate, setDiscountRate] = useState(0);
@@ -25,14 +25,14 @@ function CartCheckout({ cartItems, setCartItems, clearCart, removeFromCart }) {
   const [itemToRemove, setItemToRemove] = useState(null);
 
   const deliveryFee = cartItems.length > 0 ? 10000 : 0;
-  
+
   // --- (calculations are unchanged) ---
   const getSubtotal = () =>
-    cartItems.reduce((sum, item) => sum + item.price * 1, 0);
+cartItems.reduce((sum, item) => sum + item.price * 1, 0);
   const getDiscount = () => getSubtotal() * discountRate;
   const getTotal = () => getSubtotal() - getDiscount() + deliveryFee;
 
-  // 2. UPDATE removeItem to open the modal
+// 2. UPDATE removeItem to open the modal
   const removeItem = (id) => {
     // This no longer shows window.confirm
     // It just sets the ID of the item we're thinking about deleting
@@ -79,7 +79,7 @@ function CartCheckout({ cartItems, setCartItems, clearCart, removeFromCart }) {
 
   const handleChange = (e) => {
     setForm({ ...form, [e.target.name]: e.target.value });
-  };
+};
 
   const handleSubmit = (e) => {
     e.preventDefault();
@@ -90,18 +90,18 @@ function CartCheckout({ cartItems, setCartItems, clearCart, removeFromCart }) {
     console.log("Form Data:", form);
     console.log("Total Paid:", getTotal().toLocaleString('en-PH', { style: 'currency', currency: 'PHP' }));
 
-    alert(
+      alert(
       `✅ Checkout successful!\n\nThank you, ${form.name}! Your order is being processed.`
     );
     setShowForm(false);
-    clearCart();
+clearCart();
     setForm({ name: "", address: "", contact: "", payment: "" });
     setPromoCode("");
     setPromoApplied(false);
     setDiscountRate(0);
     setPromoMessage("");
     setPromoStatus("");
-  };
+};
 
 
   return (
