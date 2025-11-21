@@ -1,3 +1,4 @@
+// App.js
 import React, { useState, useEffect } from "react";
 import { Routes, Route, useNavigate } from "react-router-dom";
 import "./App.css";
@@ -19,39 +20,35 @@ function App() {
   const [cartStorage, setCartStorage] = useState([]);
   const navigate = useNavigate();
 
-  // --- CENTRALIZED FETCH CART FUNCTION ---
+  // Fetch cart items from backend
   const fetchCart = async () => {
     if (!token) return;
     try {
       const res = await fetch(`${API}/cart`, {
         headers: { Authorization: `Bearer ${token}` },
       });
-
-      if (!res.ok) {
-        throw new Error(`Failed to fetch cart: ${res.status}`);
-      }
-
+      if (!res.ok) throw new Error("Failed to fetch cart");
       const data = await res.json();
-      console.log("DEBUG: Cart API Response:", data); // Check console if still empty
 
-      // FIX: Handle different API response structures (Laravel often returns { data: [] })
-      let validCartArray = [];
-      if (Array.isArray(data)) {
-        validCartArray = data;
-      } else if (data.data && Array.isArray(data.data)) {
-        validCartArray = data.data;
-      } else if (data.cart && Array.isArray(data.cart)) {
-        validCartArray = data.cart;
-      }
+      // Map backend response to frontend format
+      const formattedCart = (data.items || []).map((c) => ({
+        cartItemId: c.id,
+        product_id: c.product?.id,
+        brand: c.product?.brand,
+        model: c.product?.model,
+        price: Number(c.product?.price),
+        image_link: c.product?.image_link,
+        case_size: c.product?.case_size,
+        quantity: c.quantity,
+      }));
 
-      setCartStorage(validCartArray);
+      setCartStorage(formattedCart);
     } catch (err) {
       console.error("Fetch cart error:", err);
-      // Don't clear cart on error to prevent UI flickering, but handle if needed
+      setCartStorage([]);
     }
   };
 
-  // Initial Load
   useEffect(() => {
     if (token) {
       localStorage.setItem("authToken", token);
@@ -88,7 +85,7 @@ function App() {
           model: product.model || product.name,
           price: product.price,
           image_link: product.image_link || product.image,
-          case_size: selectedSize || product.size || "N/A",
+          case_size: selectedSize || product.case_size || "N/A",
           quantity: 1,
         }),
       });
@@ -99,8 +96,7 @@ function App() {
         return false;
       }
 
-      // Refresh cart immediately after adding
-      await fetchCart();
+      await fetchCart(); // sync cart
       return true;
     } catch (error) {
       console.error("Add to cart error:", error);
@@ -109,15 +105,15 @@ function App() {
     }
   };
 
-  const removeFromCart = async (cart_id) => {
+  const removeFromCart = async (cartItemId) => {
     if (!token) return;
     try {
-      const res = await fetch(`${API}/cart/${cart_id}`, {
+      const res = await fetch(`${API}/cart/${cartItemId}`, {
         method: "DELETE",
         headers: { Authorization: `Bearer ${token}` },
       });
       if (!res.ok) throw new Error("Failed to remove item");
-      await fetchCart(); // Refresh after delete
+      await fetchCart();
     } catch (err) {
       console.error(err);
     }
@@ -171,7 +167,6 @@ function App() {
               removeFromCart={removeFromCart}
               clearCart={clearCart}
               token={token}
-              refreshCart={fetchCart} // Pass the fetch function down
             />
           }
         />
