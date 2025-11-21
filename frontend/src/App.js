@@ -156,7 +156,7 @@ function App() {
         />
         <Route
           path="/products/:id"
-          element={<ProductDetails addToCart={addToCart} token={token} />}
+          element={<ProductDetails addToCart={addToCart} token={token}/>}
         />
         <Route
           path="/cart"
