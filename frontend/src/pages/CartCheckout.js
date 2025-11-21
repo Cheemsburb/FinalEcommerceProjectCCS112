@@ -1,12 +1,13 @@
 // Sarmiento
 import React, { useEffect, useState } from "react";
+import { useNavigate } from "react-router-dom"; 
 import styles from "./styles/CartCheckout.module.css";
 import images from "../assets/imageLoader";
 
 const API = "http://localhost:8000/api";
 
-function CartCheckout() {
-  const [cartItems, setCartItems] = useState([]);
+function CartCheckout({ cartItems, setCartItems, removeFromCart, clearCart, token }) {
+  const navigate = useNavigate();
   const [loading, setLoading] = useState(true);
 
   const [form, setForm] = useState({
@@ -25,64 +26,47 @@ function CartCheckout() {
   const [showForm, setShowForm] = useState(false);
   const [itemToRemove, setItemToRemove] = useState(null);
 
-  // Fetch cart items
-  // Fetch cart items
-  const fetchCart = async () => {
-    const token = localStorage.getItem("authToken"); // FIXED
+  // Fetch cart items when component mounts or token changes
+  useEffect(() => {
     if (!token) {
-      setCartItems([]);
-      setLoading(false);
+      alert("Please log in to access the cart.");
+      navigate("/login");
       return;
     }
 
-    try {
-      const res = await fetch(`${API}/cart`, {
-        headers: { Authorization: `Bearer ${token}` },
-      });
-      const data = await res.json();
-      setCartItems(data);
-    } catch (err) {
-      console.error("Error fetching cart:", err);
-      setCartItems([]);
-    } finally {
-      setLoading(false);
-    }
-  };
+    const fetchCart = async () => {
+      try {
+        const res = await fetch(`${API}/cart`, {
+          headers: { Authorization: `Bearer ${token}` },
+        });
+        const data = await res.json();
+        setCartItems(data);
+      } catch (err) {
+        console.error("Error fetching cart:", err);
+        setCartItems([]);
+      } finally {
+        setLoading(false);
+      }
+    };
 
-  useEffect(() => {
     fetchCart();
 
-    window.addEventListener("cartUpdated", fetchCart);
-    return () => window.removeEventListener("cartUpdated", fetchCart);
-  }, []);
+    // Optional: listen to custom cartUpdated event
+    const handleCartUpdate = () => fetchCart();
+    window.addEventListener("cartUpdated", handleCartUpdate);
+    return () => window.removeEventListener("cartUpdated", handleCartUpdate);
+  }, [token, navigate, setCartItems]);
 
-  const removeFromCart = async (id) => {
-    const token = localStorage.getItem("authToken"); // FIXED
-    if (!token) {
-      setCartItems(cartItems.filter((i) => i.id !== id));
-      return;
-    }
-
-    try {
-      await fetch(`${API}/cart/${id}`, {
-        method: "DELETE",
-        headers: { Authorization: `Bearer ${token}` },
-      });
-      fetchCart();
-    } catch (err) {
-      console.error("Error deleting:", err);
-    }
-  };
-
-  const removeItem = (id) => setItemToRemove(id);
   const handleConfirmRemove = () => {
-    removeFromCart(itemToRemove);
-    setItemToRemove(null);
+    if (itemToRemove) {
+      removeFromCart(itemToRemove);
+      setItemToRemove(null);
+    }
   };
   const handleCancelRemove = () => setItemToRemove(null);
 
   const deliveryFee = cartItems.length > 0 ? 10000 : 0;
-  const getSubtotal = () => cartItems.reduce((sum, item) => sum + item.price * 1, 0);
+  const getSubtotal = () => cartItems.reduce((sum, item) => sum + item.price, 0);
   const getDiscount = () => getSubtotal() * discountRate;
   const getTotal = () => getSubtotal() - getDiscount() + deliveryFee;
 
@@ -115,15 +99,8 @@ function CartCheckout() {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    const token = localStorage.getItem("authToken"); // FIXED
-
-    if (!token) {
-      alert("Please log in to complete checkout.");
-      return;
-    }
-
     try {
-      // ✅ Create backend order
+      // Create order
       await fetch(`${API}/orders`, {
         method: "POST",
         headers: {
@@ -138,19 +115,18 @@ function CartCheckout() {
 
       alert(`Checkout successful!\n\nThank you, ${form.name}! Your order is being processed.`);
 
-      // Clear cart properly using DELETE /cart/{item}
+      // Clear cart items
       for (const item of cartItems) {
         await fetch(`${API}/cart/${item.id}`, {
           method: "DELETE",
           headers: { Authorization: `Bearer ${token}` },
         });
       }
-
-      fetchCart(); // refresh cart
-
+      clearCart(); // Update App.js state
     } catch (err) {
       console.error("Checkout error:", err);
     }
+
     setShowForm(false);
     setForm({ name: "", address: "", contact: "", payment: "" });
     setPromoCode("");
@@ -158,77 +134,78 @@ function CartCheckout() {
     setDiscountRate(0);
     setPromoMessage("");
     setPromoStatus("");
-
-    try {
-      await fetch(`${API}/cart/clear`, {
-        method: "DELETE",
-        headers: { Authorization: `Bearer ${token}` },
-      });
-      fetchCart();
-    } catch (err) {
-      console.error("Error clearing cart:", err);
-    }
   };
 
   if (loading) return <p>Loading cart...</p>;
 
-
   return (
     <section className={styles.cartPage}>
-
       <h2 className={styles.yourCart}>Your Cart</h2>
-
       <div className={styles.cartLayout}>
         {/* Cart Items Section */}
-        <section className={styles.cartSection}>
-          {cartItems.length > 0 ? (
-            <ul className={styles.cartList}>
-              {cartItems.map((item) => {
-                const imageSrc = images[item.image_link];
-
-                return ( 
-                  <li key={item.id} className={styles.cartItem}>
-                    <img
-                      src={imageSrc} 
-                      alt={item.model || item.name}
-                      className={styles.productImage}
-                    />
-                    <div className={styles.itemDetails}>
-                      <strong className={styles.itemTitle}>{item.brand} | {item.model || item.name}</strong>
-                      <span className={styles.itemSize}>Size: {item.case_size || 'N/A'}</span>
-                      <span className={styles.itemPrice}>₱{item.price.toLocaleString()}</span>
-                    </div>
-                    <button
-                      className={styles.deleteBtn}
-                      onClick={() => removeItem(item.id)} // This now calls the updated function
-                      title="Remove item"
-                    >
-                      <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path><line x1="10" y1="11" x2="10" y2="17"></line><line x1="14" y1="11" x2="14" y2="17"></line></svg>
-                    </button>
-                  </li>
-                ); 
-              })} 
-            </ul>
-          ) : (
+        {cartItems.length > 0 ? (
+          <ul className={styles.cartList}>
+            {cartItems.map((item) => {
+              const imageSrc = images[item.image_link];
+              return (
+                <li key={item.id} className={styles.cartItem}>
+                  <img
+                    src={imageSrc}
+                    alt={item.model || item.name}
+                    className={styles.productImage}
+                  />
+                  <div className={styles.itemDetails}>
+                    <strong className={styles.itemTitle}>
+                      {item.brand} | {item.model || item.name}
+                    </strong>
+                    <span className={styles.itemSize}>
+                      Size: {item.case_size || "N/A"}
+                    </span>
+                    <span className={styles.itemPrice}>
+                      ₱{item.price.toLocaleString()}
+                    </span>
+                  </div>
+                  <button
+                    className={styles.deleteBtn}
+                    onClick={() => setItemToRemove(item.id)}
+                    title="Remove item"
+                  >
+                    Remove
+                  </button>
+                </li>
+              );
+            })}
+          </ul>
+        ) : (
             <p className={styles.emptyCart}>Your cart is empty.</p>
-          )}
-        </section>
+        )}
 
-        {/* --- (Checkout Summary Section is unchanged) --- */}
+        {/* Checkout Summary */}
         {cartItems.length > 0 && (
           <section className={styles.checkoutSection}>
             <h3 className={styles.orderSummary}>Order Summary</h3>
             <div className={styles.summaryDetails}>
-              {/* ...summary details... */}
-              <p><span>Subtotal</span> <span>₱{getSubtotal().toLocaleString()}</span></p>
+              <p>
+                <span>Subtotal</span>
+                <span>₱{getSubtotal().toLocaleString()}</span>
+              </p>
               <p>
                 <span>Discount ({(discountRate * 100).toFixed(0)}%)</span>
-                <span className={styles.discountAmount}>-₱{getDiscount().toLocaleString()}</span>
+                <span className={styles.discountAmount}>
+                  -₱{getDiscount().toLocaleString()}
+                </span>
               </p>
-              <p><span>Delivery Fee</span> <span>₱{deliveryFee.toLocaleString()}</span></p>
+              <p>
+                <span>Delivery Fee</span>
+                <span>₱{deliveryFee.toLocaleString()}</span>
+              </p>
               <hr className={styles.summaryDivider} />
-              <p className={styles.totalAmount}><strong>Total</strong> <strong>₱{getTotal().toLocaleString()}</strong></p>
-              {/* ...promo section... */}
+              <p className={styles.totalAmount}>
+                <strong>Total</strong>
+                <strong>₱{getTotal().toLocaleString()}</strong>
+              </p>
+
+              {/* Promo Code */}
               <div className={styles.promoSection}>
                 <input
                   className={`${styles.promoInput} ${
@@ -260,51 +237,76 @@ function CartCheckout() {
                   {promoApplied ? "Applied" : "Apply"}
                 </button>
               </div>
-              {/* ...order button... */}
+
+              {/* Checkout Button */}
               <button
                 type="button"
                 className={styles.orderBtn}
                 onClick={() => setShowForm(true)}
               >
                 Go to Checkout
-                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="5" y1="12" x2="19" y2="12"></line><polyline points="12 5 19 12 12 19"></polyline></svg>
               </button>
             </div>
           </section>
         )}
       </div>
 
-      {/* --- (Checkout Form Modal is unchanged) --- */}
+      {/* Checkout Form Modal */}
       {showForm && (
         <div className={styles.modalOverlay}>
           <div className={styles.modalContent}>
-            {/* ...form content... */}
             <h2>Checkout Details</h2>
             <form onSubmit={handleSubmit}>
               <label>
                 Full Name
-                <input type="text" name="name" value={form.name} onChange={handleChange} required />
+                <input
+                  type="text"
+                  name="name"
+                  value={form.name}
+                  onChange={handleChange}
+                  required
+                />
               </label>
               <label>
                 Complete Address
-                <input type="text" name="address" value={form.address} onChange={handleChange} required />
+                <input
+                  type="text"
+                  name="address"
+                  value={form.address}
+                  onChange={handleChange}
+                  required
+                />
               </label>
               <label>
                 Contact Number
-                <input type="tel" name="contact" value={form.contact} onChange={handleChange} required />
+                <input
+                  type="tel"
+                  name="contact"
+                  value={form.contact}
+                  onChange={handleChange}
+                  required
+                />
               </label>
               <label>
                 Mode of Payment
-                <select name="payment" value={form.payment} onChange={handleChange} required >
+                <select
+                  name="payment"
+                  value={form.payment}
+                  onChange={handleChange}
+                  required
+                >
                   <option value="">Select Payment Method</option>
                   <option value="Cash on Delivery">Cash on Delivery</option>
                   <option value="GCash">GCash</option>
                   <option value="Credit Card">Credit Card</option>
                 </select>
               </label>
-
               <div className={styles.modalButtons}>
-                <button type="button" className={styles.cancelBtn} onClick={() => setShowForm(false)}>
+                <button
+                  type="button"
+                  className={styles.cancelBtn}
+                  onClick={() => setShowForm(false)}
+                >
                   Cancel
                 </button>
                 <button type="submit" className={styles.confirmBtn}>
@@ -316,7 +318,7 @@ function CartCheckout() {
         </div>
       )}
 
-      {/* 5. ADD THE NEW DELETE CONFIRMATION MODAL */}
+      {/* Remove Confirmation Modal */}
       {itemToRemove && (
         <div className={styles.modalOverlay}>
           <div className={styles.confirmModalContent}>
@@ -343,7 +345,6 @@ function CartCheckout() {
           </div>
         </div>
       )}
-
     </section>
   );
 }

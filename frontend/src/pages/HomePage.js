@@ -48,27 +48,52 @@ const sampleReviews = [
 const API = "http://localhost:8000/api";
 
 function HomePage() {
+  const [token, setToken] = useState(localStorage.getItem("authToken"));
+  const [isValidToken, setIsValidToken] = useState(false);
   const [products, setProducts] = useState([]);
   const [loading, setLoading] = useState(true);
   const [showAllBrands, setShowAllBrands] = useState(false);
-  const [showTopBanner, setShowTopBanner] = useState(true);
+  const [showTopBanner, setShowTopBanner] = useState(!token);
   const carouselRef = useRef(null);
 
-  // Check localStorage for real token on load
+  // Verify token validity
   useEffect(() => {
-    const token = localStorage.getItem("authToken");
-    if (token) setShowTopBanner(false); // hide banner if logged in
-  }, []);
+    const verifyToken = async () => {
+      if (!token) {
+        setIsValidToken(false);
+        setShowTopBanner(true);
+        return;
+      }
+      try {
+        const res = await fetch(`${API}/verify-token`, {
+          headers: { Authorization: `Bearer ${token}` },
+        });
+        if (res.ok) {
+          setIsValidToken(true);
+          setShowTopBanner(false);
+        } else {
+          localStorage.removeItem("authToken");
+          setIsValidToken(false);
+          setShowTopBanner(true);
+        }
+      } catch (err) {
+        console.error("Token verification failed:", err);
+        localStorage.removeItem("authToken");
+        setIsValidToken(false);
+        setShowTopBanner(true);
+      }
+    };
 
-  // Fetch products from API or fallback to local JSON
+    verifyToken();
+  }, [token]);
+
+  // Fetch products from API or fallback to JSON
   useEffect(() => {
     const fetchProducts = async () => {
-      const token = localStorage.getItem("authToken");
       try {
         const res = await fetch(`${API}/products`, {
-          headers: token ? { Authorization: `Bearer ${token}` } : {}
+          headers: isValidToken ? { Authorization: `Bearer ${token}` } : {},
         });
-
         if (!res.ok) throw new Error(`HTTP error! status: ${res.status}`);
         const data = await res.json();
         setProducts(data);
@@ -81,16 +106,16 @@ function HomePage() {
     };
 
     fetchProducts();
-  }, []);
+  }, [isValidToken, token]);
 
-  // Pre-filter all product sets
+  // Pre-filter product sets
   const rolexProducts = products.filter(p => p.brand === "Rolex").slice(0, 4);
   const rmProducts = products.filter(p => p.brand === "Richard Mille").slice(0, 4);
   const casioProducts = products.filter(p => p.brand === "Casio").slice(0, 4);
   const seikoProducts = products.filter(p => p.brand === "Seiko").slice(0, 4);
   const omegaProducts = products.filter(p => p.brand === "Omega").slice(0, 4);
 
-  // Carousel scroll function
+  // Carousel scroll
   const scroll = (direction) => {
     if (carouselRef.current && carouselRef.current.children.length > 0) {
       const card = carouselRef.current.children[0];
@@ -101,9 +126,17 @@ function HomePage() {
     }
   };
 
+  const handleLogout = () => {
+    localStorage.removeItem("authToken");
+    setToken(null);
+    setIsValidToken(false);
+    setShowTopBanner(true);
+  };
+
   return (
     <main>
-      {/* 1. Hero Section */}
+
+      {/* Hero Section */}
       <section className={style.heroSection}>
         <div className={style.heroContent}>
           <h1>MATCH YOUR STYLE WITH THE RIGHT WATCH</h1>
@@ -111,13 +144,18 @@ function HomePage() {
           <Link to="/products">
             <button className={style.heroButton}>Go Shopping</button>
           </Link>
+          {isValidToken && (
+            <button onClick={handleLogout} className={style.logoutButton}>
+              Logout
+            </button>
+          )}
         </div>
         <div className={style.heroImageContainer}>
           <img src={heroNew} alt="Models wearing watches" className={style.heroImage} />
         </div>
       </section>
 
-      {/* 2. Brand Banner */}
+      {/* Brand Banner */}
       <section className={style.brandBanner}>
         <img src={casioLogo} alt="Casio" className={style.bannerLogo} />
         <img src={rolexLogo} alt="Rolex" className={style.bannerLogo} />
@@ -126,7 +164,7 @@ function HomePage() {
         <img src={richardLogo} alt="Richard Mille" className={style.bannerLogo} />
       </section>
 
-      {/* 3-6. Product Sections */}
+      {/* Product Sections */}
       {[ 
         {label: rolexLabel, products: rolexProducts, brand: "Rolex"}, 
         {label: richardLabel, products: rmProducts, brand: "Richard Mille"}, 
@@ -158,7 +196,7 @@ function HomePage() {
         </div>
       )}
 
-      {/* 7. Browse by Category */}
+      {/* Browse by Category */}
       <section className={style.categorySection}>
         <div className={style.container}>
           <div className={style.categoryWrapper}>
@@ -185,7 +223,7 @@ function HomePage() {
         </div>
       </section>
 
-      {/* 8. Customer Reviews */}
+      {/* Customer Reviews */}
       <section className={style.reviewSection}>
         <div className={style.container}>
           <div className={style.reviewHeader}>
