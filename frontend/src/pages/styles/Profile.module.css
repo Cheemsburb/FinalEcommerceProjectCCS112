@@ -102,4 +102,21 @@
         grid-template-columns: 1fr; /* Stack columns on mobile */
         gap: 1.5rem 0;
     }
+    .logoutButton {
+  margin-top: 1rem;
+  padding: 0.8rem 1.5rem;
+  font-size: 1rem;
+  font-weight: bold;
+  color: #fff;
+  background-color: #ff4d4f;
+  border: none;
+  border-radius: 5px;
+  cursor: pointer;
+  transition: background-color 0.3s ease;
+}
+
+.logoutButton:hover {
+  background-color: #d9363e;
+}
+
 }

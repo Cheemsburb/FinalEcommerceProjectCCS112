@@ -1,26 +1,46 @@
 import React, { useState } from 'react';
 import style from "./styles/Profile.module.css";
 
-
 function Profile() {
-    // States for the editable form fields
+
+    // Profile states
+    const [firstName, setFirstName] = useState('Peter');
     const [lastName, setLastName] = useState('Ducker');
-    const [newPassword, setNewPassword] = useState('••••••••••••');
-    const [confirmPassword, setConfirmPassword] = useState('••••••••••••');
-    const [shippingAddress, setShippingAddress] = useState('Your address');
-    const [userState, setUserState] = useState('');
-    const [zipCode, setZipCode] = useState('');
+    const [email, setEmail] = useState('peterducker312@gmail.com');
+    const [phone, setPhone] = useState('(+1) - 234 - 687215421');
+    const [newPassword, setNewPassword] = useState('');
+    const [confirmPassword, setConfirmPassword] = useState('');
+
+    // Multiple addresses
+    const [addresses, setAddresses] = useState([
+        { shippingAddress: "", state: "", zipCode: "" }
+    ]);
+
+    const addAddress = () => {
+        setAddresses([...addresses, { shippingAddress: "", state: "", zipCode: "" }]);
+    };
+
+    const updateAddress = (index, field, value) => {
+        const updated = [...addresses];
+        updated[index][field] = value;
+        setAddresses(updated);
+    };
+
+    const removeAddress = (index) => {
+        const updated = addresses.filter((_, i) => i !== index);
+        setAddresses(updated);
+    };
 
     const handleSubmit = (e) => {
         e.preventDefault();
-        // Handle logic to save changes
         console.log("Saving changes:", {
+            firstName,
             lastName,
+            email,
+            phone,
             newPassword,
             confirmPassword,
-            shippingAddress,
-            userState,
-            zipCode
+            addresses
         });
     };
 
@@ -28,7 +48,7 @@ function Profile() {
         <div className={style.profileContainer}>
             <form onSubmit={handleSubmit}>
 
-                {/* --- Profile Information --- */}
+                {/* Profile Information */}
                 <h2 className={style.sectionTitle}>Profile Information</h2>
                 <div className={style.formGrid}>
                     <div className={style.formGroup}>
@@ -36,9 +56,8 @@ function Profile() {
                         <input
                             type="text"
                             id="firstName"
-                            value="Peter"
-                            readOnly
-                            className={style.readOnly}
+                            value={firstName}
+                            onChange={(e) => setFirstName(e.target.value)}
                         />
                     </div>
                     <div className={style.formGroup}>
@@ -51,85 +70,101 @@ function Profile() {
                         />
                     </div>
                     <div className={style.formGroup}>
-                        <label htmlFor="email">Email Address</label>
+                        <label>Email</label>
                         <input
                             type="email"
                             id="email"
-                            value="peterducker312@gmail.com"
-                            readOnly
-                            className={style.readOnly}
+                            value={email}
+                            onChange={(e) => setEmail(e.target.value)}
                         />
                     </div>
                     <div className={style.formGroup}>
-                        <label htmlFor="phone">Phone Number</label>
+                        <label>Phone</label>
                         <input
                             type="tel"
                             id="phone"
-                            value="(+1) - 234 - 687215421"
-                            readOnly
-                            className={style.readOnly}
+                            value={phone}
+                            onChange={(e) => setPhone(e.target.value)}
                         />
                     </div>
                 </div>
 
-                {/* --- Change Password --- */}
+                {/* Change Password */}
                 <h2 className={style.sectionTitle}>Change Password</h2>
                 <div className={style.formGrid}>
                     <div className={style.formGroup}>
-                        <label htmlFor="newPassword">New Password</label>
+                        <label>New Password</label>
                         <input
                             type="password"
-                            id="newPassword"
                             value={newPassword}
                             onChange={(e) => setNewPassword(e.target.value)}
                         />
                     </div>
                     <div className={style.formGroup}>
-                        <label htmlFor="confirmPassword">Confirm New Password</label>
+                        <label>Confirm New Password</label>
                         <input
                             type="password"
-                            id="confirmPassword"
                             value={confirmPassword}
                             onChange={(e) => setConfirmPassword(e.target.value)}
                         />
                     </div>
                 </div>
 
-                {/* --- Address --- */}
+                {/* Addresses */}
                 <h2 className={style.sectionTitle}>Address</h2>
-                <div className={style.formGrid}>
-                    <div className={`${style.formGroup} ${style.spanFull}`}>
-                        <label htmlFor="shippingAddress">Shipping address</label>
-                        <textarea
-                            id="shippingAddress"
-                            value={shippingAddress}
-                            onChange={(e) => setShippingAddress(e.target.value)}
-                            rows="4"
-                        ></textarea>
-                    </div>
-                    <div className={style.formGroup}>
-                        <label htmlFor="state">State</label>
-                        <input
-                            type="text"
-                            id="state"
-                            value={userState}
-                            onChange={(e) => setUserState(e.target.value)}
-                            placeholder="Your state"
-                        />
-                    </div>
-                    <div className={style.formGroup}>
-                        <label htmlFor="zipCode">Zip Code</label>
-                        <input
-                            type="text"
-                            id="zipCode"
-                            value={zipCode}
-                            onChange={(e) => setZipCode(e.target.value)}
-                            placeholder="Your zip code"
-                        />
-                    </div>
-                </div>
+                {addresses.map((addr, index) => (
+                    <div key={index} className={style.addressBlock}>
+                        <div className={style.formGrid}>
+                            <div className={`${style.formGroup} ${style.spanFull}`}>
+                                <label>Shipping Address</label>
+                                <textarea
+                                    rows="4"
+                                    value={addr.shippingAddress}
+                                    onChange={(e) => updateAddress(index, "shippingAddress", e.target.value)}
+                                ></textarea>
+                            </div>
+                            <div className={style.formGroup}>
+                                <label>State</label>
+                                <input
+                                    type="text"
+                                    value={addr.state}
+                                    onChange={(e) => updateAddress(index, "state", e.target.value)}
+                                    placeholder="Your state"
+                                />
+                            </div>
+                            <div className={style.formGroup}>
+                                <label>Zip Code</label>
+                                <input
+                                    type="text"
+                                    value={addr.zipCode}
+                                    onChange={(e) => updateAddress(index, "zipCode", e.target.value)}
+                                    placeholder="Your zip code"
+                                />
+                            </div>
+                        </div>
 
-                {/* --- Save Button --- */}
+                        {/* Delete button for this address */}
+                        {addresses.length > 1 && (
+                            <button
+                                type="button"
+                                className={style.deleteAddressBtn}
+                                onClick={() => removeAddress(index)}
+                            >
+                                Delete Address
+                            </button>
+                        )}
+                    </div>
+                ))}
+
+                <button
+                    type="button"
+                    onClick={addAddress}
+                    className={style.addAddressBtn}
+                >
+                    + Add Another Address
+                </button>
+
+                {/* Save Button */}
                 <button type="submit" className={style.saveButton}>
                     Save Changes
                 </button>
