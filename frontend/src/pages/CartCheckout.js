@@ -26,7 +26,7 @@ function CartCheckout({ cartItems, setCartItems, removeFromCart, clearCart, toke
   const [showForm, setShowForm] = useState(false);
   const [itemToRemove, setItemToRemove] = useState(null);
 
-  // Fetch cart items when component mounts or token changes
+  // Fetch cart items from backend and listen to cartUpdated events
   useEffect(() => {
     if (!token) {
       alert("Please log in to access the cart.");
@@ -34,13 +34,14 @@ function CartCheckout({ cartItems, setCartItems, removeFromCart, clearCart, toke
       return;
     }
 
-    const fetchCart = async () => {
+    const fetchCartItems = async () => {
       try {
+        setLoading(true);
         const res = await fetch(`${API}/cart`, {
           headers: { Authorization: `Bearer ${token}` },
         });
         const data = await res.json();
-        setCartItems(data);
+        setCartItems(Array.isArray(data) ? data : []);
       } catch (err) {
         console.error("Error fetching cart:", err);
         setCartItems([]);
@@ -49,24 +50,35 @@ function CartCheckout({ cartItems, setCartItems, removeFromCart, clearCart, toke
       }
     };
 
-    fetchCart();
+    fetchCartItems();
 
-    // Optional: listen to custom cartUpdated event
-    const handleCartUpdate = () => fetchCart();
+    const handleCartUpdate = () => fetchCartItems();
     window.addEventListener("cartUpdated", handleCartUpdate);
     return () => window.removeEventListener("cartUpdated", handleCartUpdate);
   }, [token, navigate, setCartItems]);
 
-  const handleConfirmRemove = () => {
+  // Confirm remove
+  const handleConfirmRemove = async () => {
     if (itemToRemove) {
-      removeFromCart(itemToRemove);
+      try {
+        await removeFromCart(itemToRemove);
+        setCartItems(prev => prev.filter(i => i.id !== itemToRemove));
+      } catch (err) {
+        console.error("Error removing item from cart:", err);
+      }
       setItemToRemove(null);
     }
   };
   const handleCancelRemove = () => setItemToRemove(null);
 
   const deliveryFee = cartItems.length > 0 ? 10000 : 0;
-  const getSubtotal = () => cartItems.reduce((sum, item) => sum + item.price, 0);
+
+  const getSubtotal = () =>
+    cartItems.reduce((sum, item) => {
+      const q = Number(item.quantity || item.qty || 1);
+      return sum + Number(item.price || 0) * q;
+    }, 0);
+
   const getDiscount = () => getSubtotal() * discountRate;
   const getTotal = () => getSubtotal() - getDiscount() + deliveryFee;
 
@@ -100,7 +112,6 @@ function CartCheckout({ cartItems, setCartItems, removeFromCart, clearCart, toke
   const handleSubmit = async (e) => {
     e.preventDefault();
     try {
-      // Create order
       await fetch(`${API}/orders`, {
         method: "POST",
         headers: {
@@ -108,23 +119,24 @@ function CartCheckout({ cartItems, setCartItems, removeFromCart, clearCart, toke
           Authorization: `Bearer ${token}`,
         },
         body: JSON.stringify({
-          shipping_address_id: 1,
-          billing_address_id: 1,
+          shipping_address: form.address,
+          billing_address: form.address,
+          payment_method: form.payment,
+          promo_code: promoApplied ? promoCode : null,
         }),
       });
 
       alert(`Checkout successful!\n\nThank you, ${form.name}! Your order is being processed.`);
 
-      // Clear cart items
-      for (const item of cartItems) {
-        await fetch(`${API}/cart/${item.id}`, {
-          method: "DELETE",
-          headers: { Authorization: `Bearer ${token}` },
-        });
-      }
-      clearCart(); // Update App.js state
+      await fetch(`${API}/cart/clear`, {
+        method: "POST",
+        headers: { Authorization: `Bearer ${token}` },
+      });
+
+      clearCart();
     } catch (err) {
       console.error("Checkout error:", err);
+      alert("Error processing your order. Please try again.");
     }
 
     setShowForm(false);
@@ -134,7 +146,7 @@ function CartCheckout({ cartItems, setCartItems, removeFromCart, clearCart, toke
     setDiscountRate(0);
     setPromoMessage("");
     setPromoStatus("");
-};
+  };
 
   if (loading) return <p>Loading cart...</p>;
 
@@ -146,7 +158,7 @@ function CartCheckout({ cartItems, setCartItems, removeFromCart, clearCart, toke
         {cartItems.length > 0 ? (
           <ul className={styles.cartList}>
             {cartItems.map((item) => {
-              const imageSrc = images[item.image_link];
+              const imageSrc = images[item.image_link] || images[item.image] || item.image_link || item.image || "";
               return (
                 <li key={item.id} className={styles.cartItem}>
                   <img
@@ -162,7 +174,7 @@ function CartCheckout({ cartItems, setCartItems, removeFromCart, clearCart, toke
                       Size: {item.case_size || "N/A"}
                     </span>
                     <span className={styles.itemPrice}>
-                      ₱{item.price.toLocaleString()}
+                      ₱{Number(item.price || 0).toLocaleString()}
                     </span>
                   </div>
                   <button
@@ -177,7 +189,7 @@ function CartCheckout({ cartItems, setCartItems, removeFromCart, clearCart, toke
             })}
           </ul>
         ) : (
-            <p className={styles.emptyCart}>Your cart is empty.</p>
+          <p className={styles.emptyCart}>Your cart is empty.</p>
         )}
 
         {/* Checkout Summary */}
@@ -217,7 +229,7 @@ function CartCheckout({ cartItems, setCartItems, removeFromCart, clearCart, toke
                   }`}
                   type="text"
                   placeholder="Add promo code"
-                  value={promoMessage ? promoMessage : promoCode}
+                  value={promoMessage || promoCode}
                   onChange={(e) => {
                     setPromoCode(e.target.value);
                     if (promoMessage) {
