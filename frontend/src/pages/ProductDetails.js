@@ -1,13 +1,11 @@
-import React from "react"; // 1. Import useState and useEffect from React
+import React from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import styles from "./styles/ProductDetails.module.css";
 import ProductCard from "../components/ProductCard";
 import ReviewCard from "../components/ReviewCard";
-import products from "../assets/products.json";
-import images from "../assets/imageLoader";
+import images from "../assets/imageLoader"; 
 
-
-// Sample review data updated to 6 reviews
+// Sample review data (kept static for now)
 const sampleReviews = [
   { id: 1, name: "Correllene I.", rating: 5, comment: "Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua.", date: "October 1, 2025" },
   { id: 2, name: "Josua R.", rating: 4, comment: "Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat.", date: "October 3, 2025" },
@@ -17,7 +15,6 @@ const sampleReviews = [
   { id: 6, name: "Gladwyn S.", rating: 4, comment: "Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat.", date: "October 6, 2025" }
 ];
 
-// Helper function to render star icons based on a rating score
 const renderStars = (rating) => {
   const stars = [];
   const fullStars = Math.floor(rating);
@@ -34,38 +31,69 @@ const renderStars = (rating) => {
 function ProductDetails({ addToCart }) {
   const { id } = useParams();
   const navigate = useNavigate();
+  
+  // 1. State for Product Data
+  const [product, setProduct] = React.useState(null);
+  const [isLoading, setIsLoading] = React.useState(true);
+  const [error, setError] = React.useState(null);
+
   const [message, setMessage] = React.useState("");
   const [selectedSize, setSelectedSize] = React.useState("42mm");
-
-  // 2. Add state to track mobile view
   const [isMobile, setIsMobile] = React.useState(false);
 
-  // 3. Add useEffect to check window size
+  // Handle window resize
   React.useEffect(() => {
     const handleResize = () => {
       setIsMobile(window.innerWidth <= 900);
     };
     
-    handleResize(); // Call on initial mount
+    handleResize();
     window.addEventListener("resize", handleResize);
     return () => window.removeEventListener("resize", handleResize);
-  }, []); // Empty array ensures this runs only on mount and unmount
+  }, []);
 
+  // 2. Fetch Single Product from Docker Backend (Port 8000)
+  React.useEffect(() => {
+    const fetchProductDetails = async () => {
+      setIsLoading(true);
+      try {
+        const response = await fetch(`http://localhost:8000/api/products/${id}`);
+        
+        if (!response.ok) {
+          throw new Error('Product not found');
+        }
+        
+        const data = await response.json();
+        setProduct(data);
+        setIsLoading(false);
+      } catch (err) {
+        setError(err.message);
+        setIsLoading(false);
+      }
+    };
 
-  const product = products.find((p) => p.id === parseInt(id));
+    if (id) {
+      fetchProductDetails();
+    }
+  }, [id]);
 
-  if (!product) {
-    return <div className={styles.loading}>Product not found...</div>;
+  // 3. Loading/Error UI
+  if (isLoading) {
+    return <div className={styles.loading}>Loading product details...</div>;
   }
 
-  const imagePath = images[product.image_link];
+  if (error || !product) {
+    return <div className={styles.loading}>Error: {error || "Product not found"}</div>;
+  }
 
-  const suggestions = products.filter(
-    (p) => p.brand === product.brand && p.model !== product.model
-  ).slice(0, 4);
+  // Handle Image: Checks if API gave a filename (use imageLoader) or full URL
+  const imagePath = images[product.image_link] || product.image_link;
+
+  // Note: Logic for 'suggestions' (related products)
+  // Ideally this should come from the API. For now, we leave it empty or static to prevent errors.
+  const suggestions = []; 
 
   const handleAddToCart = () => {
-    // ... (logic unchanged)
     addToCart({
       id: product.id,
       model: product.model,
@@ -81,7 +109,6 @@ function ProductDetails({ addToCart }) {
   };
 
   const handleBuyNow = () => {
-    // ... (logic unchanged)
     addToCart({
       id: product.id,
       model: product.model,
@@ -94,7 +121,6 @@ function ProductDetails({ addToCart }) {
     navigate("/cart");
   };
 
-  // 4. Create a new variable for reviews based on isMobile state
   const reviewsToShow = isMobile ? sampleReviews.slice(0, 3) : sampleReviews;
 
   return (
@@ -102,7 +128,6 @@ function ProductDetails({ addToCart }) {
       {message && <div className={styles.toast}>{message}</div>}
 
       <div className={styles.topSection}>
-        {/* ... (top section unchanged) ... */}
         <div
           className={styles.mainImage}
           style={{
@@ -117,7 +142,7 @@ function ProductDetails({ addToCart }) {
             <div className={styles.starsWrapper}>{renderStars(product.star_review)}</div>
             <span className={styles.ratingText}>{product.star_review}/5</span>
           </div>
-          <p className={styles.price}>₱{product.price.toLocaleString()}</p>
+          <p className={styles.price}>₱{Number(product.price).toLocaleString()}</p>
           <p className={styles.descriptionText}>{product.description}</p>
           <div className={styles.sizeSelection}>
             <p className={styles.sizeTitle}>Choose Size</p>
@@ -156,7 +181,6 @@ function ProductDetails({ addToCart }) {
             <button className={styles.writeReviewBtn}>Write a Review</button>
           </div>
           <div className={styles.reviewsGrid}>
-            {/* 5. Map over reviewsToShow instead of sampleReviews */}
             {reviewsToShow.map((review) => (
               <ReviewCard
                 key={review.id}
@@ -167,17 +191,15 @@ function ProductDetails({ addToCart }) {
               />
             ))}
           </div>
-          {/* 6. Conditionally hide the "Load More" button on mobile */}
           {!isMobile && (
             <button className={styles.loadMoreBtn}>Load More Reviews</button>
           )}
         </div>
 
         <div className={styles.youMightAlsoLike}>
-          {/* ... (you might like section unchanged) ... */}
           <h2 className={styles.youMightAlsoLikeTitle}>You might also like</h2>
           <div className={styles.suggestionsGrid}>
-            {suggestions.map((item) => (
+            {suggestions.length > 0 ? suggestions.map((item) => (
               <div key={item.id} className={styles.suggestionCardWrapper}>
                 <ProductCard
                   id={item.id}
@@ -188,7 +210,7 @@ function ProductDetails({ addToCart }) {
                   image_link={item.image_link}
                 />
               </div>
-            ))}
+            )) : <p>No suggestions available</p>}
           </div>
         </div>
       </div>
