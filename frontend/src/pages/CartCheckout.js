@@ -134,7 +134,7 @@ function CartCheckout({ cartItems, setCartItems, removeFromCart, clearCart, toke
     setDiscountRate(0);
     setPromoMessage("");
     setPromoStatus("");
-  };
+};
 
   if (loading) return <p>Loading cart...</p>;
 
