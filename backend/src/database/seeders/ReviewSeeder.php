@@ -40,13 +40,16 @@ class ReviewSeeder extends Seeder
         // 4. Loop through EVERY product
         foreach ($products as $product) {
             
-            // Create exactly 6 reviews for this product
-            for ($i = 0; $i < 6; $i++) {
+            // Determine count: 6, or the total number of users if less than 6
+            $reviewCount = min(6, $users->count());
+
+            // Get 'reviewCount' UNIQUE random users from the collection
+            // This guarantees no user appears twice for the same product
+            $randomUsers = $users->random($reviewCount);
+
+            foreach ($randomUsers as $randomUser) {
                 // Pick a random review template
                 $template = $reviewTemplates[array_rand($reviewTemplates)];
-                
-                // Pick a random user (from the filtered customer list)
-                $randomUser = $users->random();
 
                 Review::create([
                     'user_id' => $randomUser->id,
