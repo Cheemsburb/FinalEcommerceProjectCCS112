@@ -27,15 +27,17 @@ class ReviewSeeder extends Seeder
             ['rating' => 1, 'description' => "Delivery was slow, but the item is okay."]
         ];
 
-        // 2. Get all products and users from the database
+        // 2. Get all products
         $products = Product::all();
-        $users = User::all();
+        
+        // 3. Get ONLY 'customer' users (Exclude admins)
+        $users = User::where('role', 'customer')->get();
 
         if ($products->isEmpty() || $users->isEmpty()) {
             return;
         }
 
-        // 3. Loop through EVERY product
+        // 4. Loop through EVERY product
         foreach ($products as $product) {
             
             // Create exactly 6 reviews for this product
@@ -43,12 +45,8 @@ class ReviewSeeder extends Seeder
                 // Pick a random review template
                 $template = $reviewTemplates[array_rand($reviewTemplates)];
                 
-                // Pick a random user (from your 5 users)
+                // Pick a random user (from the filtered customer list)
                 $randomUser = $users->random();
-
-                // Check if this user already reviewed this product to avoid duplicates
-                // (Optional, but good practice. If they did, we skip or just allow it for seeding)
-                // For simplicity here, we'll allow it since it's just seeding data.
 
                 Review::create([
                     'user_id' => $randomUser->id,
@@ -58,7 +56,7 @@ class ReviewSeeder extends Seeder
                 ]);
             }
 
-            // 4. Update the product's average star rating
+            // 5. Update the product's average star rating
             $product->star_review = $product->reviews()->avg('rating');
             $product->save();
         }

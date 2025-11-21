@@ -17,6 +17,13 @@ const API = "http://localhost:8000/api";
 
 function App() {
   const [token, setToken] = useState(localStorage.getItem("authToken") || "");
+  
+  // --- NEW: User State initialized from localStorage ---
+  const [user, setUser] = useState(() => {
+    const savedUser = localStorage.getItem("userData");
+    return savedUser ? JSON.parse(savedUser) : null;
+  });
+
   const [cartStorage, setCartStorage] = useState([]);
   const navigate = useNavigate();
 
@@ -59,9 +66,21 @@ function App() {
     }
   }, [token]);
 
-  const signIn = (userToken) => setToken(userToken);
+  // --- UPDATED: signIn now accepts token AND user data ---
+  const signIn = (userToken, userData) => {
+    setToken(userToken);
+    setUser(userData);
+    if (userData) {
+      localStorage.setItem("userData", JSON.stringify(userData));
+    }
+  };
+
+  // --- UPDATED: signOut clears user data as well ---
   const signOut = () => {
     setToken("");
+    setUser(null);
+    localStorage.removeItem("authToken");
+    localStorage.removeItem("userData");
     navigate("/login");
   };
 
@@ -154,9 +173,10 @@ function App() {
           path="/products"
           element={<ProductListing addToCart={addToCart} token={token} />}
         />
+        {/* --- UPDATED: Passing currentUser prop --- */}
         <Route
           path="/products/:id"
-          element={<ProductDetails addToCart={addToCart} token={token} />}
+          element={<ProductDetails addToCart={addToCart} token={token} currentUser={user} />}
         />
         <Route
           path="/cart"

@@ -100,12 +100,11 @@ function Login({ signIn }) {
       if (response.ok) {
         console.log('Login successful:', data);
         
-        // Pass the token and user object back to your App component
+        // --- UPDATED: Pass user object to signIn ---
         if (signIn) {
             signIn(data.token, data.user);
         }
         
-        // Navigate to home or dashboard
         navigate('/');
       } else {
         // Handle API errors (like wrong password)
