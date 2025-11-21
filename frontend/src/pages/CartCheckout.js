@@ -1,58 +1,106 @@
-//Sarmiento
-import React, { useState } from "react";
+// CartCheckout.js
+import React, { useEffect, useState } from "react";
+import { useNavigate } from "react-router-dom"; 
 import styles from "./styles/CartCheckout.module.css";
 import images from "../assets/imageLoader";
 
-function CartCheckout({ cartItems, setCartItems, clearCart, removeFromCart }) {
+const API = "http://localhost:8000/api";
+
+function CartCheckout({ cartItems, setCartItems, removeFromCart, clearCart, token }) {
+  const navigate = useNavigate();
+  const [loading, setLoading] = useState(true);
 
   const [form, setForm] = useState({
     name: "",
-    address: "",
-    contact: "",
+    address_id: "",
     payment: "",
+    new_address: "",
+    new_state: "",
+    new_zip_code: "",
+    contact_number: "",
   });
 
-// --- (other states are unchanged) ---
+  const [addresses, setAddresses] = useState([]);
   const [promoCode, setPromoCode] = useState("");
   const [promoApplied, setPromoApplied] = useState(false);
   const [discountRate, setDiscountRate] = useState(0);
   const [promoMessage, setPromoMessage] = useState("");
   const [promoStatus, setPromoStatus] = useState("");
   const [showForm, setShowForm] = useState(false);
-
-  // 1. ADD NEW STATE for the confirmation modal
-  // It will store the ID of the item to be removed
   const [itemToRemove, setItemToRemove] = useState(null);
 
-  const deliveryFee = cartItems.length > 0 ? 10000 : 0;
+  // Fetch cart items
+  const fetchCart = async () => {
+    if (!token) return;
+    try {
+      const res = await fetch(`${API}/cart`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      if (!res.ok) throw new Error("Failed to fetch cart");
+      const data = await res.json();
 
-  // --- (calculations are unchanged) ---
-  const getSubtotal = () =>
-cartItems.reduce((sum, item) => sum + item.price * 1, 0);
+      const formattedCart = Array.isArray(data.items)
+        ? data.items.map((c) => ({
+            cartItemId: c.id,
+            product_id: c.product?.id,
+            brand: c.product?.brand,
+            model: c.product?.model,
+            price: Number(c.product?.price),
+            image_link: c.product?.image_link,
+            case_size: c.product?.case_size,
+            quantity: c.quantity,
+          }))
+        : [];
+
+      setCartItems(formattedCart);
+    } catch (err) {
+      console.error("Error fetching cart:", err);
+      setCartItems([]);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Fetch addresses
+  const fetchAddresses = async () => {
+    if (!token) return;
+    try {
+      const res = await fetch(`${API}/addresses`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      if (!res.ok) throw new Error("Failed to fetch addresses");
+      const data = await res.json();
+      setAddresses(Array.isArray(data) ? data : []);
+    } catch (err) {
+      console.error("Error fetching addresses:", err);
+      setAddresses([]);
+    }
+  };
+
+  useEffect(() => {
+    if (!token) {
+      alert("Please log in to access the cart.");
+      navigate("/login");
+      return;
+    }
+    fetchCart();
+    fetchAddresses();
+  }, [token, navigate]);
+
+  // Remove item modal
+  const handleConfirmRemove = async () => {
+    if (itemToRemove) {
+      await removeFromCart(itemToRemove);
+      setItemToRemove(null);
+    }
+  };
+  const handleCancelRemove = () => setItemToRemove(null);
+
+  const deliveryFee = cartItems.length > 0 ? 10000 : 0;
+  const getSubtotal = () => cartItems.reduce((sum, item) => sum + item.price * item.quantity, 0);
   const getDiscount = () => getSubtotal() * discountRate;
   const getTotal = () => getSubtotal() - getDiscount() + deliveryFee;
 
-// 2. UPDATE removeItem to open the modal
-  const removeItem = (id) => {
-    // This no longer shows window.confirm
-    // It just sets the ID of the item we're thinking about deleting
-    setItemToRemove(id);
-  };
-
-  // 3. ADD new handler for confirming the removal
-  const handleConfirmRemove = () => {
-    if (itemToRemove) {
-      removeFromCart(itemToRemove);
-    }
-    setItemToRemove(null); // Close the modal
-  };
-
-  // 4. ADD new handler for canceling the removal
-  const handleCancelRemove = () => {
-    setItemToRemove(null); // Close the modal
-  };
-
-  // --- (other handlers are unchanged) ---
   const showMessage = (msg, status) => {
     setPromoMessage(msg);
     setPromoStatus(status);
@@ -65,101 +113,195 @@ cartItems.reduce((sum, item) => sum + item.price * 1, 0);
   const applyPromo = () => {
     const code = promoCode.trim().toUpperCase();
     if (promoApplied) {
-      showMessage("Promo code already applied.", "error");
+      showMessage("Promo code already used.", "error");
       return;
     }
     if (code === "WTCH.CO") {
-      setDiscountRate(0.1); // 10% discount
+      setDiscountRate(0.1);
       setPromoApplied(true);
-      showMessage("You got a 10% discount!", "success");
+      showMessage("10% Discount Applied!", "success");
     } else {
-      showMessage("Invalid promo code. Try again.", "error");
+      showMessage("Invalid promo code.", "error");
     }
   };
 
-  const handleChange = (e) => {
-    setForm({ ...form, [e.target.name]: e.target.value });
-};
+  const handleChange = (e) => setForm({ ...form, [e.target.name]: e.target.value });
 
-  const handleSubmit = (e) => {
+  const handleQuantityChange = async (cartItemId, quantity) => {
+    if (!token) return;
+    try {
+      const res = await fetch(`${API}/cart/${cartItemId}`, {
+        method: "PUT",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({ quantity }),
+      });
+      if (!res.ok) throw new Error("Failed to update quantity");
+      fetchCart();
+    } catch (err) {
+      console.error(err);
+    }
+  };
+
+  // Handle checkout
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    console.log(
-      `Checkout successful! Thank you, ${form.name}! Your order is being processed.`
-    );
-    console.log("Order Details:", cartItems);
-    console.log("Form Data:", form);
-    console.log("Total Paid:", getTotal().toLocaleString('en-PH', { style: 'currency', currency: 'PHP' }));
+    let shippingAddressId = form.address_id;
 
-      alert(
-      `✅ Checkout successful!\n\nThank you, ${form.name}! Your order is being processed.`
-    );
+    // If new address, save it first
+    if (form.address_id === "new") {
+      if (!form.new_address || !form.new_state || !form.new_zip_code || !form.contact_number) {
+        alert("Please fill in all new address fields.");
+        return;
+      }
+      try {
+        const res = await fetch(`${API}/addresses`, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${token}`,
+          },
+          body: JSON.stringify({
+            address: form.new_address,
+            state: form.new_state,
+            zip_code: form.new_zip_code,
+            contact_number: form.contact_number,
+          }),
+        });
+        if (!res.ok) throw new Error("Failed to save new address");
+        const data = await res.json();
+        shippingAddressId = data.id;
+        fetchAddresses();
+      } catch (err) {
+        console.error(err);
+        alert("Error saving new address. Please try again.");
+        return;
+      }
+    }
+
+    try {
+      // Create order
+      const res = await fetch(`${API}/orders`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({
+          shipping_address_id: shippingAddressId,
+          billing_address_id: shippingAddressId,
+          promo_code: promoApplied ? promoCode : null,
+        }),
+      });
+      if (!res.ok) throw new Error("Checkout failed");
+
+      // Clear cart and refresh frontend
+      await clearCart();
+      await fetchCart();
+
+      alert("Checkout successful! Your order has been placed.");
+    } catch (err) {
+      console.error(err);
+      alert("Error processing your order. Please try again.");
+      return;
+    }
+
+    // Reset form and promo
     setShowForm(false);
-clearCart();
-    setForm({ name: "", address: "", contact: "", payment: "" });
+    setForm({
+      name: "",
+      address_id: "",
+      payment: "",
+      new_address: "",
+      new_state: "",
+      new_zip_code: "",
+      contact_number: "",
+    });
     setPromoCode("");
     setPromoApplied(false);
     setDiscountRate(0);
     setPromoMessage("");
     setPromoStatus("");
-};
+  };
 
+  if (loading) return <p>Loading cart...</p>;
 
   return (
     <section className={styles.cartPage}>
-
       <h2 className={styles.yourCart}>Your Cart</h2>
-
       <div className={styles.cartLayout}>
-        {/* Cart Items Section */}
-        <section className={styles.cartSection}>
-          {cartItems.length > 0 ? (
-            <ul className={styles.cartList}>
-              {cartItems.map((item) => {
-                const imageSrc = images[item.image_link];
-
-                return ( 
-                  <li key={item.id} className={styles.cartItem}>
-                    <img
-                      src={imageSrc} 
-                      alt={item.model || item.name}
-                      className={styles.productImage}
-                    />
-                    <div className={styles.itemDetails}>
-                      <strong className={styles.itemTitle}>{item.brand} | {item.model || item.name}</strong>
-                      <span className={styles.itemSize}>Size: {item.case_size || 'N/A'}</span>
-                      <span className={styles.itemPrice}>₱{item.price.toLocaleString()}</span>
+        {/* Cart Items */}
+        {cartItems.length > 0 ? (
+          <ul className={styles.cartList}>
+            {cartItems.map((item) => {
+              const imageSrc = images[item.image_link] || "";
+              return (
+                <li key={item.cartItemId} className={styles.cartItem}>
+                  <img src={imageSrc} alt={item.model} className={styles.productImage} />
+                  <div className={styles.itemDetails}>
+                    <strong className={styles.itemTitle}>
+                      {item.brand} | {item.model}
+                    </strong>
+                    <span className={styles.itemSize}>
+                      Size: {item.case_size || "N/A"}
+                    </span>
+                    <span className={styles.itemPrice}>
+                      ₱{item.price.toLocaleString()}
+                    </span>
+                    <div className={styles.quantityWrapper}>
+                      Quantity:
+                      <input
+                        type="number"
+                        min="1"
+                        value={item.quantity}
+                        onChange={(e) =>
+                          handleQuantityChange(item.cartItemId, Number(e.target.value))
+                        }
+                      />
                     </div>
-                    <button
-                      className={styles.deleteBtn}
-                      onClick={() => removeItem(item.id)} // This now calls the updated function
-                      title="Remove item"
-                    >
-                      <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path><line x1="10" y1="11" x2="10" y2="17"></line><line x1="14" y1="11" x2="14" y2="17"></line></svg>
-                    </button>
-                  </li>
-                ); 
-              })} 
-            </ul>
-          ) : (
-            <p className={styles.emptyCart}>Your cart is empty.</p>
-          )}
-        </section>
+                  </div>
+                  <button
+                    className={styles.deleteBtn}
+                    onClick={() => setItemToRemove(item.cartItemId)}
+                  >
+                    Remove
+                  </button>
+                </li>
+              );
+            })}
+          </ul>
+        ) : (
+          <p className={styles.emptyCart}>Your cart is empty.</p>
+        )}
 
-        {/* --- (Checkout Summary Section is unchanged) --- */}
+        {/* Order Summary */}
         {cartItems.length > 0 && (
           <section className={styles.checkoutSection}>
             <h3 className={styles.orderSummary}>Order Summary</h3>
             <div className={styles.summaryDetails}>
-              {/* ...summary details... */}
-              <p><span>Subtotal</span> <span>₱{getSubtotal().toLocaleString()}</span></p>
+              <p>
+                <span>Subtotal</span>
+                <span>₱{getSubtotal().toLocaleString()}</span>
+              </p>
               <p>
                 <span>Discount ({(discountRate * 100).toFixed(0)}%)</span>
-                <span className={styles.discountAmount}>-₱{getDiscount().toLocaleString()}</span>
+                <span className={styles.discountAmount}>
+                  -₱{getDiscount().toLocaleString()}
+                </span>
               </p>
-              <p><span>Delivery Fee</span> <span>₱{deliveryFee.toLocaleString()}</span></p>
+              <p>
+                <span>Delivery Fee</span>
+                <span>₱{deliveryFee.toLocaleString()}</span>
+              </p>
               <hr className={styles.summaryDivider} />
-              <p className={styles.totalAmount}><strong>Total</strong> <strong>₱{getTotal().toLocaleString()}</strong></p>
-              {/* ...promo section... */}
+              <p className={styles.totalAmount}>
+                <strong>Total</strong>
+                <strong>₱{getTotal().toLocaleString()}</strong>
+              </p>
+
+              {/* Promo Code */}
               <div className={styles.promoSection}>
                 <input
                   className={`${styles.promoInput} ${
@@ -171,7 +313,7 @@ clearCart();
                   }`}
                   type="text"
                   placeholder="Add promo code"
-                  value={promoMessage ? promoMessage : promoCode}
+                  value={promoMessage || promoCode}
                   onChange={(e) => {
                     setPromoCode(e.target.value);
                     if (promoMessage) {
@@ -191,42 +333,96 @@ clearCart();
                   {promoApplied ? "Applied" : "Apply"}
                 </button>
               </div>
-              {/* ...order button... */}
+
               <button
                 type="button"
                 className={styles.orderBtn}
                 onClick={() => setShowForm(true)}
               >
                 Go to Checkout
-                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="5" y1="12" x2="19" y2="12"></line><polyline points="12 5 19 12 12 19"></polyline></svg>
               </button>
             </div>
           </section>
         )}
       </div>
 
-      {/* --- (Checkout Form Modal is unchanged) --- */}
+      {/* Checkout Modal */}
       {showForm && (
         <div className={styles.modalOverlay}>
           <div className={styles.modalContent}>
-            {/* ...form content... */}
             <h2>Checkout Details</h2>
             <form onSubmit={handleSubmit}>
               <label>
                 Full Name
                 <input type="text" name="name" value={form.name} onChange={handleChange} required />
               </label>
+
               <label>
-                Complete Address
-                <input type="text" name="address" value={form.address} onChange={handleChange} required />
+                Shipping Address
+                <select
+                  name="address_id"
+                  value={form.address_id}
+                  onChange={handleChange}
+                  required
+                >
+                  <option value="">Select Address</option>
+                  {addresses.map((addr) => (
+                    <option key={addr.id} value={addr.id}>
+                      {addr.address}, {addr.state}, {addr.zip_code}
+                    </option>
+                  ))}
+                  <option value="new">Add New Address</option>
+                </select>
               </label>
-              <label>
-                Contact Number
-                <input type="tel" name="contact" value={form.contact} onChange={handleChange} required />
-              </label>
+
+              {form.address_id === "new" && (
+                <>
+                  <label>
+                    Address
+                    <input
+                      type="text"
+                      name="new_address"
+                      value={form.new_address}
+                      onChange={handleChange}
+                      required
+                    />
+                  </label>
+                  <label>
+                    State
+                    <input
+                      type="text"
+                      name="new_state"
+                      value={form.new_state}
+                      onChange={handleChange}
+                      required
+                    />
+                  </label>
+                  <label>
+                    Zip Code
+                    <input
+                      type="text"
+                      name="new_zip_code"
+                      value={form.new_zip_code}
+                      onChange={handleChange}
+                      required
+                    />
+                  </label>
+                  <label>
+                    Contact Number
+                    <input
+                      type="text"
+                      name="contact_number"
+                      value={form.contact_number}
+                      onChange={handleChange}
+                      required
+                    />
+                  </label>
+                </>
+              )}
+
               <label>
                 Mode of Payment
-                <select name="payment" value={form.payment} onChange={handleChange} required >
+                <select name="payment" value={form.payment} onChange={handleChange} required>
                   <option value="">Select Payment Method</option>
                   <option value="Cash on Delivery">Cash on Delivery</option>
                   <option value="GCash">GCash</option>
@@ -238,16 +434,14 @@ clearCart();
                 <button type="button" className={styles.cancelBtn} onClick={() => setShowForm(false)}>
                   Cancel
                 </button>
-                <button type="submit" className={styles.confirmBtn}>
-                  Confirm Order
-                </button>
+                <button type="submit" className={styles.confirmBtn}>Confirm Order</button>
               </div>
             </form>
           </div>
         </div>
       )}
 
-      {/* 5. ADD THE NEW DELETE CONFIRMATION MODAL */}
+      {/* Remove Item Modal */}
       {itemToRemove && (
         <div className={styles.modalOverlay}>
           <div className={styles.confirmModalContent}>
@@ -256,25 +450,16 @@ clearCart();
               Are you sure you want to remove this item from your cart?
             </p>
             <div className={styles.confirmButtons}>
-              <button
-                type="button"
-                className={styles.confirmBtnSecondary}
-                onClick={handleCancelRemove}
-              >
+              <button type="button" className={styles.confirmBtnSecondary} onClick={handleCancelRemove}>
                 Cancel
               </button>
-              <button
-                type="button"
-                className={styles.confirmBtnPrimary}
-                onClick={handleConfirmRemove}
-              >
+              <button type="button" className={styles.confirmBtnPrimary} onClick={handleConfirmRemove}>
                 Remove
               </button>
             </div>
           </div>
         </div>
       )}
-
     </section>
   );
 }

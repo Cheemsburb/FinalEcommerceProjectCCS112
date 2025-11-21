@@ -33,5 +33,19 @@
     "email": "glad@gmail.com",
     "password": "gladpass",
     "role": "customer"
+  },
+  {
+    "first_name": "Drei",
+    "last_name": "Tampururot",
+    "email": "drei@gmail.com",
+    "password": "dreipass",
+    "role": "customer"
+  },
+  {
+    "first_name": "Renz",
+    "last_name": "De Jesus",
+    "email": "renz@gmail.com",
+    "password": "renzpass",
+    "role": "customer"
   }
 ]
