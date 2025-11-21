@@ -5,13 +5,6 @@ import images from "../assets/imageLoader";
 
 const API = "http://localhost:8000/api";
 
-// Mock cart data for testing without a token
-const fallbackCart = [
-  { id: 1, brand: "Rolex", model: "Submariner", case_size: "41mm", price: 13400, image_link: "rolex-subm-dote.png" },
-  { id: 2, brand: "Casio", model: "G-Shock", case_size: "44mm", price: 8000, image_link: "casio-gshock.png" },
-  { id: 3, brand: "Omega", model: "Seamaster", case_size: "42mm", price: 15000, image_link: "omega-seamaster.png" },
-];
-
 function CartCheckout() {
   const [cartItems, setCartItems] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -32,21 +25,16 @@ function CartCheckout() {
   const [showForm, setShowForm] = useState(false);
   const [itemToRemove, setItemToRemove] = useState(null);
 
-  const token = localStorage.getItem("token");
-  const isLoggedIn = !!token; // login check
-
   // Fetch cart items
-  useEffect(() => {
-    if (!token) {
-      // No token: use fallback cart
-      setCartItems(fallbackCart);
-      setLoading(false);
-    } else {
-      fetchCart();
-    }
-  }, [token]);
-
+  // Fetch cart items
   const fetchCart = async () => {
+    const token = localStorage.getItem("authToken"); // FIXED
+    if (!token) {
+      setCartItems([]);
+      setLoading(false);
+      return;
+    }
+
     try {
       const res = await fetch(`${API}/cart`, {
         headers: { Authorization: `Bearer ${token}` },
@@ -55,13 +43,21 @@ function CartCheckout() {
       setCartItems(data);
     } catch (err) {
       console.error("Error fetching cart:", err);
-      setCartItems(fallbackCart); // fallback if API fails
+      setCartItems([]);
     } finally {
       setLoading(false);
     }
   };
 
+  useEffect(() => {
+    fetchCart();
+
+    window.addEventListener("cartUpdated", fetchCart);
+    return () => window.removeEventListener("cartUpdated", fetchCart);
+  }, []);
+
   const removeFromCart = async (id) => {
+    const token = localStorage.getItem("authToken"); // FIXED
     if (!token) {
       setCartItems(cartItems.filter((i) => i.id !== id));
       return;
@@ -72,7 +68,7 @@ function CartCheckout() {
         method: "DELETE",
         headers: { Authorization: `Bearer ${token}` },
       });
-      setCartItems(cartItems.filter((i) => i.id !== id));
+      fetchCart();
     } catch (err) {
       console.error("Error deleting:", err);
     }
@@ -119,14 +115,42 @@ function CartCheckout() {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    const token = localStorage.getItem("authToken"); // FIXED
 
-    if (!isLoggedIn) {
+    if (!token) {
       alert("Please log in to complete checkout.");
       return;
     }
 
-    alert(`Checkout successful!\n\nThank you, ${form.name}! Your order is being processed.`);
+    try {
+      // ✅ Create backend order
+      await fetch(`${API}/orders`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({
+          shipping_address_id: 1,
+          billing_address_id: 1,
+        }),
+      });
 
+      alert(`Checkout successful!\n\nThank you, ${form.name}! Your order is being processed.`);
+
+      // Clear cart properly using DELETE /cart/{item}
+      for (const item of cartItems) {
+        await fetch(`${API}/cart/${item.id}`, {
+          method: "DELETE",
+          headers: { Authorization: `Bearer ${token}` },
+        });
+      }
+
+      fetchCart(); // refresh cart
+
+    } catch (err) {
+      console.error("Checkout error:", err);
+    }
     setShowForm(false);
     setForm({ name: "", address: "", contact: "", payment: "" });
     setPromoCode("");
@@ -140,7 +164,7 @@ function CartCheckout() {
         method: "DELETE",
         headers: { Authorization: `Bearer ${token}` },
       });
-      setCartItems([]);
+      fetchCart();
     } catch (err) {
       console.error("Error clearing cart:", err);
     }

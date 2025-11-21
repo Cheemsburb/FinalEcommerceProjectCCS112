@@ -47,29 +47,34 @@ const sampleReviews = [
 // API URL
 const API = "http://localhost:8000/api";
 
-const AUTH_TOKEN = "";
-
 function HomePage() {
   const [products, setProducts] = useState([]);
   const [loading, setLoading] = useState(true);
   const [showAllBrands, setShowAllBrands] = useState(false);
+  const [showTopBanner, setShowTopBanner] = useState(true);
   const carouselRef = useRef(null);
 
+  // Check localStorage for real token on load
+  useEffect(() => {
+    const token = localStorage.getItem("authToken");
+    if (token) setShowTopBanner(false); // hide banner if logged in
+  }, []);
+
+  // Fetch products from API or fallback to local JSON
   useEffect(() => {
     const fetchProducts = async () => {
+      const token = localStorage.getItem("authToken");
       try {
         const res = await fetch(`${API}/products`, {
-          headers: AUTH_TOKEN ? { Authorization: `Bearer ${AUTH_TOKEN}` } : {}
+          headers: token ? { Authorization: `Bearer ${token}` } : {}
         });
 
         if (!res.ok) throw new Error(`HTTP error! status: ${res.status}`);
-
         const data = await res.json();
         setProducts(data);
       } catch (err) {
         console.error("Error loading products:", err);
-        // fallback to local JSON
-        setProducts(productsData);
+        setProducts(productsData); // fallback
       } finally {
         setLoading(false);
       }
