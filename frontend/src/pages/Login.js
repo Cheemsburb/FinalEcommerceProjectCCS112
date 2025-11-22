@@ -105,7 +105,13 @@ function Login({ signIn }) {
             signIn(data.token, data.user);
         }
         
-        navigate('/');
+        // Redirects based on the role given.
+        if (data.user.role === 'admin') {
+          navigate('/admin/products');
+        } else {
+          navigate('/');
+        }
+
       } else {
         // Handle API errors (like wrong password)
         setError(data.message || 'Login failed. Please check your credentials.');

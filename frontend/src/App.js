@@ -1,6 +1,5 @@
-// App.js
 import React, { useState, useEffect } from "react";
-import { Routes, Route, useNavigate } from "react-router-dom";
+import { Routes, Route, useNavigate, Navigate } from "react-router-dom";
 import "./App.css";
 
 import HomePage from "./pages/HomePage";
@@ -12,13 +11,23 @@ import Footer from "./components/Footer";
 import Profile from "./pages/Profile";
 import Login from "./pages/Login";
 import Register from "./pages/Register";
+import AdminProducts from "./pages/AdminProducts";
+import AdminUsers from "./pages/AdminUsers"; 
 
 const API = "http://localhost:8000/api";
+
+// AdminRoute component to protect admin routes.
+const AdminRoute = ({ user, children }) => {
+  if (!user || user.role !== 'admin') {
+    return <Navigate to="/" replace />;
+  }
+  return children;
+};
 
 function App() {
   const [token, setToken] = useState(localStorage.getItem("authToken") || "");
   
-  // --- NEW: User State initialized from localStorage ---
+  // User state to hold user information
   const [user, setUser] = useState(() => {
     const savedUser = localStorage.getItem("userData");
     return savedUser ? JSON.parse(savedUser) : null;
@@ -27,7 +36,6 @@ function App() {
   const [cartStorage, setCartStorage] = useState([]);
   const navigate = useNavigate();
 
-  // Fetch cart items from backend
   const fetchCart = async () => {
     if (!token) return;
     try {
@@ -37,7 +45,6 @@ function App() {
       if (!res.ok) throw new Error("Failed to fetch cart");
       const data = await res.json();
 
-      // Map backend response to frontend format
       const formattedCart = (data.items || []).map((c) => ({
         cartItemId: c.id,
         product_id: c.product?.id,
@@ -66,7 +73,6 @@ function App() {
     }
   }, [token]);
 
-  // --- UPDATED: signIn now accepts token AND user data ---
   const signIn = (userToken, userData) => {
     setToken(userToken);
     setUser(userData);
@@ -75,7 +81,6 @@ function App() {
     }
   };
 
-  // --- UPDATED: signOut clears user data as well ---
   const signOut = () => {
     setToken("");
     setUser(null);
@@ -115,7 +120,7 @@ function App() {
         return false;
       }
 
-      await fetchCart(); // sync cart
+      await fetchCart(); 
       return true;
     } catch (error) {
       console.error("Add to cart error:", error);
@@ -163,7 +168,13 @@ function App() {
 
   return (
     <>
-      <Navbar proceedToCheckout={proceedToCheckout} cartCount={cartStorage.length} />
+      <Navbar 
+        proceedToCheckout={proceedToCheckout} 
+        cartCount={cartStorage.length} 
+        user={user} 
+        signOut={signOut} 
+      />
+      
       <Routes>
         <Route
           path="/"
@@ -173,7 +184,6 @@ function App() {
           path="/products"
           element={<ProductListing addToCart={addToCart} token={token} />}
         />
-        {/* --- UPDATED: Passing currentUser prop --- */}
         <Route
           path="/products/:id"
           element={<ProductDetails addToCart={addToCart} token={token} currentUser={user} />}
@@ -193,6 +203,24 @@ function App() {
         <Route path="/profile" element={<Profile token={token} />} />
         <Route path="/login" element={<Login signIn={signIn} />} />
         <Route path="/register" element={<Register signIn={signIn} />} />
+
+        {/*Admin Routes*/}
+        <Route 
+          path="/admin/products" 
+          element={
+            <AdminRoute user={user}>
+              <AdminProducts token={token} />
+            </AdminRoute>
+          } 
+        />
+        <Route 
+          path="/admin/users" 
+          element={
+            <AdminRoute user={user}>
+              <AdminUsers token={token} />
+            </AdminRoute>
+          } 
+        />
       </Routes>
       <Footer />
     </>
