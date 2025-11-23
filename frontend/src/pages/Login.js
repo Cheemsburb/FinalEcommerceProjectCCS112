@@ -6,8 +6,10 @@ import { Link, useNavigate } from 'react-router-dom';
 
 const images = [pic1, pic2];
 const displayImages = [pic1, pic2, pic1];
-const TRANSITION_DURATION = 700; 
+const TRANSITION_DURATION = 700;
+const API_BASE_URL = 'http://localhost:8000/api'; // Define your API base URL
 
+// Icon Components
 const EyeOpenIcon = () => (
   <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
     <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
@@ -27,152 +29,124 @@ function Login({ signIn }) {
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState('');
-  const [isLoading, setIsLoading] = useState(false);
-  
+  const [success, setSuccess] = useState('');
   const [activeIndex, setActiveIndex] = useState(0);
-  const [isJumping, setIsJumping] = useState(false); 
-
+  const [isJumping, setIsJumping] = useState(false);
   const navigate = useNavigate();
 
+  // Image Carousel Logic (Remains the same)
   useEffect(() => {
-    const interval = setInterval(() => {
-      setActiveIndex(prev => prev + 1);
-    }, 5000); 
+    const interval = setInterval(() => setActiveIndex(prev => prev + 1), 5000);
     return () => clearInterval(interval);
   }, []);
 
   useEffect(() => {
     if (activeIndex === displayImages.length - 1) {
-      const jumpTimer = setTimeout(() => {
-        setIsJumping(true); 
-        setActiveIndex(0); 
-      }, TRANSITION_DURATION);
+      const jumpTimer = setTimeout(() => { setIsJumping(true); setActiveIndex(0); }, TRANSITION_DURATION);
       return () => clearTimeout(jumpTimer);
     }
-  
     if (activeIndex === 0 && isJumping) {
-      const reenableTimer = setTimeout(() => {
-        setIsJumping(false);
-      }, 50); 
+      const reenableTimer = setTimeout(() => setIsJumping(false), 50);
       return () => clearTimeout(reenableTimer);
     }
   }, [activeIndex, isJumping]);
+  // End of Image Carousel Logic
 
-
+  // **UPDATED: handleSubmit function for API call**
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError('');
-    setIsLoading(true);
+    setSuccess('');
+
+    // Prepare data for API
+    const loginData = {
+      email: email,
+      password: password,
+    };
 
     try {
-      // Call the backend API
-      const response = await fetch('http://localhost:8000/api/login', {
+      // API Call to POST /login
+      const response = await fetch(`${API_BASE_URL}/login`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'Accept': 'application/json',
+          'Accept': 'application/json'
         },
-        body: JSON.stringify({ email, password }),
+        body: JSON.stringify(loginData),
       });
 
       const data = await response.json();
 
-      if (response.ok) {
-        console.log('Login successful:', data);
+      if (response.ok) { // Login Success (e.g., status 200)
+        // Store API token and user info
+        localStorage.setItem("userLoggedIn", "true");
+        localStorage.setItem("currentUserEmail", data.user.email);
+        localStorage.setItem("apiToken", data.token); // Store the API token
+
+        if (signIn) signIn(data.token, data.user);
+
+        setSuccess("Login successful! Redirecting...");
         
-        // Pass the token and user object back to your App component
-        if (signIn) {
-            signIn(data.token, data.user);
-        }
+        // Clear sensitive fields
+        setPassword('');
         
-        // Navigate to home or dashboard
-        navigate('/');
+        setTimeout(() => navigate("/"), 2000);
       } else {
-        // Handle API errors (like wrong password)
-        setError(data.message || 'Login failed. Please check your credentials.');
+        // API Error (e.g., 401 Unauthorized, invalid credentials)
+        let errorMessage = 'Invalid email or password.';
+        
+        if (data.message) {
+             errorMessage = data.message;
+        }
+
+        setError(errorMessage);
+        console.error("Login Error Data:", data);
       }
     } catch (err) {
-      console.error('Login error:', err);
-      setError('Unable to connect to the server.');
-    } finally {
-      setIsLoading(false);
+      // Network/Fetch Error (Server not running, connection issue)
+      setError("Connection error: Could not reach the API server. Is the backend running?");
+      console.error("Fetch Error:", err);
     }
   };
+  // **END OF UPDATED: handleSubmit**
 
   return (
     <div className={style.loginPage}>
       <div className={style.card}>
         <div className={style.formSide}>
           <h1>Login</h1>
-          <p className={style.subtitle}>
-            Do not have an account? <Link to="/register">create a new one.</Link>
-          </p>
+          <p className={style.subtitle}>Do not have an account? <Link to="/register">create a new one.</Link></p>
 
           <form onSubmit={handleSubmit}>
+            {success && <div style={{ color: 'green', marginBottom: '10px', fontWeight: '600' }}>{success}</div>}
             {error && <div style={{ color: 'red', marginBottom: '10px' }}>{error}</div>}
-            
+
             <div className={style.formGroup}>
-              <label htmlFor="email">Enter Your Email Or Phone</label>
-              <input
-                type="text"
-                id="email"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                placeholder="michael.joe@xmail.com"
-                required
-                disabled={isLoading}
-              />
+              <label htmlFor="email">Enter Your Email</label>
+              <input type="email" id="email" value={email} onChange={e => setEmail(e.target.value)} placeholder="michael.joe@xmail.com" required/>
             </div>
 
             <div className={style.formGroup}>
               <label htmlFor="password">Enter Your Password</label>
               <div className={style.passwordWrapper}>
-                <input
-                  type={showPassword ? 'text' : 'password'}
-                  id="password"
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  placeholder="••••••••"
-                  required
-                  disabled={isLoading}
-                />
-                <button
-                  type="button"
-                  aria-label={showPassword ? "Hide password" : "Show password"}
-                  className={style.eyeIcon}
-                  onClick={() => setShowPassword(!showPassword)}
-                  disabled={isLoading}
-                >
+                <input type={showPassword ? 'text' : 'password'} id="password" value={password} onChange={e => setPassword(e.target.value)} placeholder="••••••••" required/>
+                <button type="button" className={style.eyeIcon} onClick={() => setShowPassword(!showPassword)}>
                   {showPassword ? <EyeClosedIcon /> : <EyeOpenIcon />}
                 </button>
               </div>
             </div>
 
-            <button 
-              type="submit" 
-              className={style.loginButton} 
-              disabled={isLoading}
-              style={{ opacity: isLoading ? 0.7 : 1 }}
-            >
-              {isLoading ? 'Logging in...' : 'Login'}
-            </button>
+            <button type="submit" className={style.loginButton}>Login</button>
           </form>
-
-          <a href="#" className={style.forgotLink}>
-            Forgot Your Password
-          </a>
         </div>
 
         <div className={style.imageSide}>
           {displayImages.map((img, index) => (
-            <div
-              key={index}
-              className={`${style.imageSlide} ${isJumping ? style.noTransition : ''}`}
-              style={{
-                backgroundImage: `url(${img})`,
-                transform: `translateX(${(index - activeIndex) * 100}%)`,
-              }}
-            ></div>
+            <div 
+              key={index} 
+              className={`${style.imageSlide} ${isJumping ? style.noTransition : ''}`} 
+              style={{ backgroundImage: `url(${img})`, transform: `translateX(${(index - activeIndex) * 100}%)` }}>
+            </div>
           ))}
         </div>
       </div>

@@ -1,9 +1,10 @@
-//Sarmiento
 import React, { useState } from "react";
+import { useNavigate } from "react-router-dom";
 import styles from "./styles/CartCheckout.module.css";
 import images from "../assets/imageLoader";
 
-function CartCheckout({ cartItems, setCartItems, clearCart, removeFromCart }) {
+function CartCheckout({ cartItems = [], setCartItems, clearCart, removeFromCart }) {
+  const navigate = useNavigate();
 
   const [form, setForm] = useState({
     name: "",
@@ -12,7 +13,6 @@ function CartCheckout({ cartItems, setCartItems, clearCart, removeFromCart }) {
     payment: "",
   });
 
-  // --- (other states are unchanged) ---
   const [promoCode, setPromoCode] = useState("");
   const [promoApplied, setPromoApplied] = useState(false);
   const [discountRate, setDiscountRate] = useState(0);
@@ -20,39 +20,31 @@ function CartCheckout({ cartItems, setCartItems, clearCart, removeFromCart }) {
   const [promoStatus, setPromoStatus] = useState("");
   const [showForm, setShowForm] = useState(false);
 
-  // 1. ADD NEW STATE for the confirmation modal
-  // It will store the ID of the item to be removed
   const [itemToRemove, setItemToRemove] = useState(null);
 
   const deliveryFee = cartItems.length > 0 ? 10000 : 0;
-  
-  // --- (calculations are unchanged) ---
+
   const getSubtotal = () =>
-    cartItems.reduce((sum, item) => sum + item.price * 1, 0);
-  const getDiscount = () => getSubtotal() * discountRate;
+    cartItems.reduce((sum, item) => sum + (Number(item.price) || 0) * (Number(item.quantity) || 1), 0);
+
+  const getDiscount = () => Math.round(getSubtotal() * discountRate);
   const getTotal = () => getSubtotal() - getDiscount() + deliveryFee;
 
-  // 2. UPDATE removeItem to open the modal
   const removeItem = (id) => {
-    // This no longer shows window.confirm
-    // It just sets the ID of the item we're thinking about deleting
     setItemToRemove(id);
   };
 
-  // 3. ADD new handler for confirming the removal
   const handleConfirmRemove = () => {
     if (itemToRemove) {
       removeFromCart(itemToRemove);
     }
-    setItemToRemove(null); // Close the modal
+    setItemToRemove(null);
   };
 
-  // 4. ADD new handler for canceling the removal
   const handleCancelRemove = () => {
-    setItemToRemove(null); // Close the modal
+    setItemToRemove(null);
   };
 
-  // --- (other handlers are unchanged) ---
   const showMessage = (msg, status) => {
     setPromoMessage(msg);
     setPromoStatus(status);
@@ -69,7 +61,7 @@ function CartCheckout({ cartItems, setCartItems, clearCart, removeFromCart }) {
       return;
     }
     if (code === "WTCH.CO") {
-      setDiscountRate(0.1); // 10% discount
+      setDiscountRate(0.1); // 10%
       setPromoApplied(true);
       showMessage("You got a 10% discount!", "success");
     } else {
@@ -81,94 +73,122 @@ function CartCheckout({ cartItems, setCartItems, clearCart, removeFromCart }) {
     setForm({ ...form, [e.target.name]: e.target.value });
   };
 
+  // Main: place order -> save to current user's orders inside localStorage users[]
   const handleSubmit = (e) => {
     e.preventDefault();
-    console.log(
-      `Checkout successful! Thank you, ${form.name}! Your order is being processed.`
-    );
-    console.log("Order Details:", cartItems);
-    console.log("Form Data:", form);
-    console.log("Total Paid:", getTotal().toLocaleString('en-PH', { style: 'currency', currency: 'PHP' }));
 
-    alert(
-      `✅ Checkout successful!\n\nThank you, ${form.name}! Your order is being processed.`
-    );
-    setShowForm(false);
-    clearCart();
+    const currentUserEmail = localStorage.getItem("currentUserEmail");
+    if (!currentUserEmail) {
+      alert("No user logged in. Please login first.");
+      navigate("/login");
+      return;
+    }
+
+    const users = JSON.parse(localStorage.getItem("users")) || [];
+    const userIndex = users.findIndex((u) => u.email === currentUserEmail);
+
+    if (userIndex === -1) {
+      alert("User not found. Please login again.");
+      navigate("/login");
+      return;
+    }
+
+    // Prepare order
+    const newOrder = {
+      orderId: `ORD-${Date.now()}`,
+      date: new Date().toLocaleString(),
+      total: getTotal(),
+      subtotal: getSubtotal(),
+      discount: getDiscount(),
+      deliveryFee,
+      paymentMethod: form.payment || "N/A",
+      shippingTo: form.address || "",
+      contact: form.contact || "",
+      items: cartItems.map((item) => ({
+        id: item.id,
+        name: item.name || item.model || item.brand,
+        brand: item.brand || "",
+        model: item.model || "",
+        price: Number(item.price) || 0,
+        quantity: Number(item.quantity) || 1,
+        image_link: item.image_link || "",
+      })),
+    };
+
+    // Append to user's orders
+    const updatedUsers = [...users];
+    const currentUser = { ...updatedUsers[userIndex] };
+    currentUser.orders = currentUser.orders || [];
+    currentUser.orders.push(newOrder);
+    updatedUsers[userIndex] = currentUser;
+
+    localStorage.setItem("users", JSON.stringify(updatedUsers));
+
+    // Also keep separate "orders" key if you like (optional). Here we won't duplicate.
+
+    // Clear cart (both in-memory and localStorage key if used)
+    if (typeof clearCart === "function") clearCart();
+    if (typeof setCartItems === "function") setCartItems([]);
+    localStorage.removeItem("cartItems"); // optional if you store cart globally
+
+    // Reset form and promo
     setForm({ name: "", address: "", contact: "", payment: "" });
     setPromoCode("");
     setPromoApplied(false);
     setDiscountRate(0);
     setPromoMessage("");
     setPromoStatus("");
-  };
+    setShowForm(false);
 
+    // Inform user and redirect to profile (order history will show the new order)
+    alert(`✅ Checkout successful!\n\nThank you, ${newOrder.shippingTo || newOrder.contact || "customer"}!\nYour order (${newOrder.orderId}) has been placed.`);
+    navigate("/profile");
+  };
 
   return (
     <section className={styles.cartPage}>
-
       <h2 className={styles.yourCart}>Your Cart</h2>
 
       <div className={styles.cartLayout}>
-        {/* Cart Items Section */}
         <section className={styles.cartSection}>
           {cartItems.length > 0 ? (
             <ul className={styles.cartList}>
               {cartItems.map((item) => {
                 const imageSrc = images[item.image_link];
-
-                return ( 
+                return (
                   <li key={item.id} className={styles.cartItem}>
-                    <img
-                      src={imageSrc} 
-                      alt={item.model || item.name}
-                      className={styles.productImage}
-                    />
+                    <img src={imageSrc} alt={item.model || item.name} className={styles.productImage} />
                     <div className={styles.itemDetails}>
                       <strong className={styles.itemTitle}>{item.brand} | {item.model || item.name}</strong>
                       <span className={styles.itemSize}>Size: {item.case_size || 'N/A'}</span>
-                      <span className={styles.itemPrice}>₱{item.price.toLocaleString()}</span>
+                      <span className={styles.itemPrice}>₱{(Number(item.price) || 0).toLocaleString()}</span>
+                      <span>Qty: {item.quantity || 1}</span>
                     </div>
-                    <button
-                      className={styles.deleteBtn}
-                      onClick={() => removeItem(item.id)} // This now calls the updated function
-                      title="Remove item"
-                    >
+                    <button className={styles.deleteBtn} onClick={() => removeItem(item.id)} title="Remove item">
                       <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path><line x1="10" y1="11" x2="10" y2="17"></line><line x1="14" y1="11" x2="14" y2="17"></line></svg>
                     </button>
                   </li>
-                ); 
-              })} 
+                );
+              })}
             </ul>
           ) : (
             <p className={styles.emptyCart}>Your cart is empty.</p>
           )}
         </section>
 
-        {/* --- (Checkout Summary Section is unchanged) --- */}
         {cartItems.length > 0 && (
           <section className={styles.checkoutSection}>
             <h3 className={styles.orderSummary}>Order Summary</h3>
             <div className={styles.summaryDetails}>
-              {/* ...summary details... */}
-              <p><span>Subtotal</span> <span>₱{getSubtotal().toLocaleString()}</span></p>
-              <p>
-                <span>Discount ({(discountRate * 100).toFixed(0)}%)</span>
-                <span className={styles.discountAmount}>-₱{getDiscount().toLocaleString()}</span>
-              </p>
-              <p><span>Delivery Fee</span> <span>₱{deliveryFee.toLocaleString()}</span></p>
+              <p><span>Subtotal</span><span>₱{getSubtotal().toLocaleString()}</span></p>
+              <p><span>Discount ({(discountRate * 100).toFixed(0)}%)</span><span className={styles.discountAmount}>-₱{getDiscount().toLocaleString()}</span></p>
+              <p><span>Delivery Fee</span><span>₱{deliveryFee.toLocaleString()}</span></p>
               <hr className={styles.summaryDivider} />
-              <p className={styles.totalAmount}><strong>Total</strong> <strong>₱{getTotal().toLocaleString()}</strong></p>
-              {/* ...promo section... */}
+              <p className={styles.totalAmount}><strong>Total</strong><strong>₱{getTotal().toLocaleString()}</strong></p>
+
               <div className={styles.promoSection}>
                 <input
-                  className={`${styles.promoInput} ${
-                    promoStatus === "success"
-                      ? styles.success
-                      : promoStatus === "error"
-                      ? styles.error
-                      : ""
-                  }`}
+                  className={`${styles.promoInput} ${promoStatus === "success" ? styles.success : promoStatus === "error" ? styles.error : ""}`}
                   type="text"
                   placeholder="Add promo code"
                   value={promoMessage ? promoMessage : promoCode}
@@ -182,21 +202,12 @@ function CartCheckout({ cartItems, setCartItems, clearCart, removeFromCart }) {
                   disabled={promoApplied}
                   aria-label="Promo Code"
                 />
-                <button
-                  type="button"
-                  className={styles.applyBtn}
-                  onClick={applyPromo}
-                  disabled={promoApplied}
-                >
+                <button type="button" className={styles.applyBtn} onClick={applyPromo} disabled={promoApplied}>
                   {promoApplied ? "Applied" : "Apply"}
                 </button>
               </div>
-              {/* ...order button... */}
-              <button
-                type="button"
-                className={styles.orderBtn}
-                onClick={() => setShowForm(true)}
-              >
+
+              <button type="button" className={styles.orderBtn} onClick={() => setShowForm(true)}>
                 Go to Checkout
                 <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="5" y1="12" x2="19" y2="12"></line><polyline points="12 5 19 12 12 19"></polyline></svg>
               </button>
@@ -205,11 +216,9 @@ function CartCheckout({ cartItems, setCartItems, clearCart, removeFromCart }) {
         )}
       </div>
 
-      {/* --- (Checkout Form Modal is unchanged) --- */}
       {showForm && (
         <div className={styles.modalOverlay}>
           <div className={styles.modalContent}>
-            {/* ...form content... */}
             <h2>Checkout Details</h2>
             <form onSubmit={handleSubmit}>
               <label>
@@ -235,46 +244,26 @@ function CartCheckout({ cartItems, setCartItems, clearCart, removeFromCart }) {
               </label>
 
               <div className={styles.modalButtons}>
-                <button type="button" className={styles.cancelBtn} onClick={() => setShowForm(false)}>
-                  Cancel
-                </button>
-                <button type="submit" className={styles.confirmBtn}>
-                  Confirm Order
-                </button>
+                <button type="button" className={styles.cancelBtn} onClick={() => setShowForm(false)}>Cancel</button>
+                <button type="submit" className={styles.confirmBtn}>Confirm Order</button>
               </div>
             </form>
           </div>
         </div>
       )}
 
-      {/* 5. ADD THE NEW DELETE CONFIRMATION MODAL */}
       {itemToRemove && (
         <div className={styles.modalOverlay}>
           <div className={styles.confirmModalContent}>
             <h3 className={styles.confirmTitle}>Remove Item</h3>
-            <p className={styles.confirmText}>
-              Are you sure you want to remove this item from your cart?
-            </p>
+            <p className={styles.confirmText}>Are you sure you want to remove this item from your cart?</p>
             <div className={styles.confirmButtons}>
-              <button
-                type="button"
-                className={styles.confirmBtnSecondary}
-                onClick={handleCancelRemove}
-              >
-                Cancel
-              </button>
-              <button
-                type="button"
-                className={styles.confirmBtnPrimary}
-                onClick={handleConfirmRemove}
-              >
-                Remove
-              </button>
+              <button type="button" className={styles.confirmBtnSecondary} onClick={handleCancelRemove}>Cancel</button>
+              <button type="button" className={styles.confirmBtnPrimary} onClick={handleConfirmRemove}>Remove</button>
             </div>
           </div>
         </div>
       )}
-
     </section>
   );
 }
