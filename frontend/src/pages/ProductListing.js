@@ -6,7 +6,7 @@ import productsData from "../assets/products.json";
 import PriceRangeSlider from "../components/PriceRangeSlider";
 
 // Member 3 : Rigodon, Josua
-function ProductListing() {
+function ProductListing({ addToCart, token }) {
   const [products, setProducts] = useState([]);
   const [currentPage, setCurrentPage] = useState(1);
   const [productsPerPage] = useState(9);
@@ -46,10 +46,9 @@ function ProductListing() {
     };
   }, [isFilterOpen]);
 
-
   useEffect(() => {
     let filtered = [...productsData];
-    // ... (filtering logic remains the same) ...
+
     if (selectedBrands.length > 0) {
       const lowerSelectedBrands = selectedBrands.map(b => b.toLowerCase());
       filtered = filtered.filter(item =>
@@ -108,7 +107,6 @@ function ProductListing() {
 
 
   const getHeaderTitle = () => {
-    // ... (getHeaderTitle logic remains the same) ...
     const hasBrands = selectedBrands.length > 0;
     const hasCategories = selectedCategories.length > 0;
     const brandString = selectedBrands.join(' & ');
@@ -121,18 +119,16 @@ function ProductListing() {
 
   return (
     <div className={styles.wrapper}>
-      {/* 3. Add conditional class to sidebar. Add overlay for closing. */}
       {isFilterOpen && <div className={styles.overlay} onClick={toggleFilter}></div>}
       <aside className={`${styles.sidebar} ${isFilterOpen ? styles.sidebarOpen : ''}`}>
          <div className={styles.filterHeader}>
           <h3>Filters</h3>
-          {/* 4. Make the original icon a "close" button on mobile */}
           <span className={styles.filterIcon} onClick={toggleFilter}>
             <span className={styles.desktopIcon}>☰</span>
             <span className={styles.mobileCloseIcon}>&times;</span>
           </span>
         </div>
-        <div className={styles.filterContent}> {/* Added wrapper for scrolling */}
+        <div className={styles.filterContent}>
           <div className={styles.filterSection}>
             <h4>Brand</h4>
             {["Rolex", "Omega", "Seiko", "Richard Mille", "Casio"].map(brand => (
@@ -177,7 +173,6 @@ function ProductListing() {
       </aside>
 
       <main className={styles.main}>
-        {/* 5. Add the mobile-only filter trigger */}
         <div className={styles.mobileFilterTrigger} onClick={toggleFilter}>
             <span>Filters</span>
             <span className={styles.filterIcon}>☰</span>
@@ -188,11 +183,11 @@ function ProductListing() {
           <p>Showing {products.length > 0 ? indexOfFirstProduct + 1 : 0}–{Math.min(indexOfLastProduct, products.length)} of {products.length} Products</p>
         </div>
         
-        {/* ... (rest of the main content remains the same) ... */}
         {currentProducts.length > 0 ? (
           <div className={styles.grid}>
             {currentProducts.map((product) => (
-              <ProductCard key={product.id} {...product} />
+              // forward addToCart + token so ProductCard can call addToCart directly
+              <ProductCard key={product.id} {...product} addToCart={addToCart} token={token} />
             ))}
           </div>
         ) : (

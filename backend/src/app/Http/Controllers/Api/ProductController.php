@@ -1,8 +1,9 @@
 <?php
+
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
-use App\Models\Product; // <-- 1. ADD THIS IMPORT
+use App\Models\Product;
 use Illuminate\Http\Request;
 
 class ProductController extends Controller
@@ -12,7 +13,8 @@ class ProductController extends Controller
      */
     public function index()
     {
-        // 2. ADD THIS LINE
+        // For the list, we usually just want the product info (stars are already calculated).
+        // We don't load all reviews here to keep it fast.
         return Product::all();
     }
 
@@ -21,7 +23,8 @@ class ProductController extends Controller
      */
     public function store(Request $request)
     {
-        // Logic to create a product (admin only)
+        $product = Product::create($request->all());
+        return response()->json($product, 201);
     }
 
     /**
@@ -29,9 +32,10 @@ class ProductController extends Controller
      */
     public function show(Product $product)
     {
-        // 3. ADD THIS LINE (for your next test)
-        // This works because of Laravel's "Route Model Binding"
-        return $product;
+        // --- THIS IS THE FIX ---
+        // Load the 'reviews' relationship, and for each review,
+        // load the 'user' (so we can display the reviewer's name).
+        return $product->load('reviews.user');
     }
 
     /**
@@ -39,7 +43,8 @@ class ProductController extends Controller
      */
     public function update(Request $request, Product $product)
     {
-        // Logic to update a product (admin only)
+        $product->update($request->all());
+        return response()->json($product);
     }
 
     /**
@@ -47,6 +52,7 @@ class ProductController extends Controller
      */
     public function destroy(Product $product)
     {
-        // Logic to delete a product (admin only)
+        $product->delete();
+        return response()->json(null, 204);
     }
 }
