@@ -47,7 +47,12 @@ function ProductCard({ id, model, brand, star_review, price, image_link }) {
             <div className={styles.starsWrapper}>{renderStars(star_review)}</div>
             <span className={styles.ratingText}>{star_review}/5</span>
           </div>
-          <p className={styles.price}>₱{price.toLocaleString()}</p>
+          <p className={styles.price}>
+            {new Intl.NumberFormat('en-PH', {
+              style: 'currency',
+              currency: 'PHP'
+            }).format(Number(price))}
+          </p>
         </div>
       </Link>
     </div>

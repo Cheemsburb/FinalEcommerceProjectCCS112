@@ -59,6 +59,80 @@ class UserController extends Controller
     }
 
     /**
+     * [ADMIN ONLY] Create a new user.
+     */
+    public function store(Request $request)
+    {
+        // Check if the requester is an admin
+        if ($request->user()->role !== 'admin') {
+            return response()->json(['message' => 'Unauthorized'], 403);
+        }
+
+        // Validate the incoming data
+        $validatedData = $request->validate([
+            'first_name' => 'required|string|max:255',
+            'last_name' => 'required|string|max:255',
+            'email' => 'required|string|email|max:255|unique:users',
+            'password' => 'required|string|min:8',
+            'role' => 'required|in:admin,customer', // Ensure role is valid
+        ]);
+
+        // Create the user
+        $user = User::create([
+            'first_name' => $validatedData['first_name'],
+            'last_name' => $validatedData['last_name'],
+            'email' => $validatedData['email'],
+            'password' => Hash::make($validatedData['password']), // Hash the password
+            'role' => $validatedData['role'],
+        ]);
+
+        // Return the new user
+        return response()->json($user, 201);
+    }
+
+    /**
+     * [ADMIN ONLY] Update a specific user's details.
+     */
+    public function updateUser(Request $request, $id)
+    {
+        // Check if requester is admin
+        if ($request->user()->role !== 'admin') {
+            return response()->json(['message' => 'Unauthorized'], 403);
+        }
+
+        $user = User::find($id);
+
+        if (!$user) {
+            return response()->json(['message' => 'User not found'], 404);
+        }
+
+        // Validate input
+        $validatedData = $request->validate([
+            'first_name' => 'required|string|max:255',
+            'last_name'  => 'required|string|max:255',
+            // Unique check ignores the current user's ID
+            'email'      => 'required|email|unique:users,email,' . $user->id, 
+            'role'       => 'required|in:admin,customer',
+            'password'   => 'nullable|string|min:8', // Password is optional
+        ]);
+
+        // Update fields
+        $user->first_name = $validatedData['first_name'];
+        $user->last_name  = $validatedData['last_name'];
+        $user->email      = $validatedData['email'];
+        $user->role       = $validatedData['role'];
+
+        // Only hash and update password if a new one was provided
+        if (!empty($validatedData['password'])) {
+            $user->password = Hash::make($validatedData['password']);
+        }
+
+        $user->save();
+
+        return response()->json($user);
+    }
+
+    /**
      * [ADMIN ONLY] Delete a specific user.
      */
     public function destroy(Request $request, $id)

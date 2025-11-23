@@ -12,7 +12,7 @@ import { Link } from "react-router-dom";
 const CATEGORIES = ["Men's", "Women's", "Formal", "Sportswear"];
 const BRANDS = ["Rolex", "Omega", "Seiko", "Richard Mille", "Casio"];
 
-function Navbar({ onSearchChange }) {
+function Navbar({ onSearchChange, user, signOut }) {
   const [token, setToken] = useState(localStorage.getItem("authToken"));
   const [showTopBanner, setShowTopBanner] = useState(!token);
   const [searchQuery, setSearchQuery] = useState("");
@@ -22,14 +22,14 @@ function Navbar({ onSearchChange }) {
   const [isMobileSearchOpen, setIsMobileSearchOpen] = useState(false);
   const searchContainerRef = useRef(null);
 
-  // Update banner visibility if token changes
   useEffect(() => {
-    setShowTopBanner(!token);
-  }, [token]);
+    const storedToken = localStorage.getItem("authToken");
+    setToken(storedToken);
+    setShowTopBanner(!storedToken);
+  }, [user]);
 
   const closeTopBanner = () => setShowTopBanner(false);
 
-  // Search logic
   useEffect(() => {
     if (searchQuery.trim() === "") {
       setSearchResults([]);
@@ -45,7 +45,6 @@ function Navbar({ onSearchChange }) {
     if (onSearchChange) onSearchChange(searchQuery);
   }, [searchQuery, onSearchChange]);
 
-  // Close search results when clicking outside
   useEffect(() => {
     function handleClickOutside(event) {
       if (searchContainerRef.current && !searchContainerRef.current.contains(event.target)) {
@@ -60,7 +59,6 @@ function Navbar({ onSearchChange }) {
   const toggleDropdown = (name) => setOpenDropdown(openDropdown === name ? null : name);
   const toggleMobileMenu = () => { setIsMobileMenuOpen(!isMobileMenuOpen); setIsMobileSearchOpen(false); setSearchResults([]); };
   const toggleMobileSearch = () => { setIsMobileSearchOpen(!isMobileSearchOpen); setIsMobileMenuOpen(false); if (!isMobileSearchOpen) { setSearchQuery(""); setSearchResults([]); } };
-  const closeAllMenus = () => { setOpenDropdown(null); setIsMobileMenuOpen(false); };
   const handleResultClick = () => { setSearchQuery(""); setSearchResults([]); setIsMobileSearchOpen(false); };
   const handleDropdownItemClick = () => { setOpenDropdown(null); setIsMobileMenuOpen(false); };
 
@@ -106,6 +104,13 @@ function Navbar({ onSearchChange }) {
 
           {/* Desktop Nav Links */}
           <nav className={style.navLinks}>
+            {/* Admin Link */}
+            {user && user.role === 'admin' && (
+              <Link to="/admin/products" className={style.dropdown} style={{ textDecoration: 'none', color: '#d00' }}>
+                Admin Dashboard
+              </Link>
+            )}
+
             <div className={style.dropdown} onClick={() => toggleDropdown('categories')} role="button" aria-expanded={openDropdown === 'categories'}>
               Categories <img src={dropdownIcon} alt="" className={style.arrowIcon} />
               {openDropdown === 'categories' && (
@@ -158,15 +163,33 @@ function Navbar({ onSearchChange }) {
 
           {/* User Actions */}
           <div className={style.userActions}>
-            <button className={`${style.iconButton} ${style.searchIconButtonMobile}`} onClick={toggleMobileSearch} aria-label="Open search">
+            <button className={`${style.iconButton} ${style.searchIconButtonMobile}`} onClick={toggleMobileSearch}>
               <img src={searchMobile} alt="Search" className={style.actionIcon} />
             </button>
-            <Link to="/cart" className={style.iconButton} aria-label="Shopping Cart">
+            <Link to="/cart" className={style.iconButton}>
               <img src={cartIcon} alt="" className={style.actionIcon} />
             </Link>
-            <Link to="/profile" className={style.iconButton} aria-label="User Profile">
+            <Link to="/profile" className={style.iconButton}>
               <img src={profileIcon} alt="" className={style.actionIcon} />
             </Link>
+            
+            {/* Logout Button */}
+            {user && (
+               <button 
+                 onClick={signOut} 
+                 style={{ 
+                   background: 'none', 
+                   border: 'none', 
+                   cursor: 'pointer', 
+                   fontSize: '0.8rem', 
+                   fontWeight: 'bold', 
+                   marginLeft: '10px',
+                   color: '#555'
+                 }}
+               >
+                 Logout
+               </button>
+            )}
           </div>
         </div>
       ) : (
@@ -199,6 +222,18 @@ function Navbar({ onSearchChange }) {
       {/* Mobile Menu */}
       <div className={`${style.mobileMenu} ${isMobileMenuOpen ? style.open : ''}`}>
         <button className={style.mobileMenuClose} onClick={toggleMobileMenu} aria-label="Close menu">&times;</button>
+        
+        {/* Admin dashboard */}
+        {user && user.role === 'admin' && (
+           <>
+            <h3>Admin</h3>
+            <Link to="/admin/products" className={style.mobileMenuItem} onClick={handleDropdownItemClick} style={{ color: '#d00', fontWeight: 'bold' }}>
+                Dashboard
+            </Link>
+            <hr className={style.mobileMenuDivider}/>
+           </>
+        )}
+
         <h3>Categories</h3>
         {CATEGORIES.map(cat => (
           <Link key={cat} to={`/products?category=${encodeURIComponent(cat)}`} className={style.mobileMenuItem} onClick={handleDropdownItemClick}>
