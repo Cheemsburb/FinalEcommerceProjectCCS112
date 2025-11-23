@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { Link } from 'react-router-dom';
 import styles from './styles/Admin.module.css';
 
 const API = "http://localhost:8000/api";
@@ -119,6 +120,11 @@ export default function AdminUsers({ token }) {
 
     return (
         <div className={styles.adminContainer}>
+            <div className={styles.adminNav}>
+                <Link to="/admin/products" className={styles.adminNavLink}>Products</Link>
+                <Link to="/admin/users" className={`${styles.adminNavLink} ${styles.activeLink}`}>Users</Link>
+            </div>
+
             <header className={styles.adminHeader}>
                 <h1>User Management</h1>
                 <button className={`${styles.btn} ${styles.btnSuccess}`} onClick={() => setIsModalOpen(true)}>

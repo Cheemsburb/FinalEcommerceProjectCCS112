@@ -77,6 +77,10 @@ Route::middleware('auth:sanctum')->group(function () {
     // ===============================================
     // (For now, these are just protected by login.
     // Later, you can add an admin middleware to this group.)
+    Route::get('/users', [UserController::class, 'index']);
+    Route::post('/users', [UserController::class, 'store']);
+    Route::put('/users/{id}', [UserController::class, 'updateUser']);
+    Route::delete('/users/{id}', [UserController::class, 'destroy']);
     
     // --- Product Management (Admin) ---
     Route::post('/products', [ProductController::class, 'store']);

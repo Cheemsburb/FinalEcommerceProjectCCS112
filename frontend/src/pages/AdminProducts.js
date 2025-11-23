@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { Link } from 'react-router-dom';
 import styles from './styles/Admin.module.css'; 
 import images from '../assets/imageLoader'; 
 
@@ -137,6 +138,11 @@ export default function AdminProducts({ token }) {
 
     return (
         <div className={styles.adminContainer}>
+            <div className={styles.adminNav}>
+                <Link to="/admin/products" className={`${styles.adminNavLink} ${styles.activeLink}`}>Products</Link>
+                <Link to="/admin/users" className={styles.adminNavLink}>Users</Link>
+            </div>
+
             <header className={styles.adminHeader}>
                 <h1>Product Inventory</h1>
                 <button className={`${styles.btn} ${styles.btnPrimary}`} onClick={() => setIsModalOpen(true)}>
@@ -167,16 +173,18 @@ export default function AdminProducts({ token }) {
                                     <td className={styles.skuCell}>#{product.id}</td>
                                     <td>
                                         <div className={styles.productInfo}>
-                                            {product.image_link ? (
-                                                <img 
+                                            <div className={styles.imageWrapper}>
+                                              {product.image_link ? (
+                                                  <img 
                                                     className={styles.productThumb} 
                                                     src={getProductImage(product.image_link)} 
                                                     alt="" 
                                                     onError={(e) => e.target.style.display='none'} 
-                                                />
-                                            ) : (
-                                                <div className={styles.productThumbPlaceholder}>No Img</div>
-                                            )}
+                                                  />
+                                              ) : (
+                                                  <div className={styles.productThumbPlaceholder}>No Img</div>
+                                              )}
+                                            </div>
                                             <div>
                                                 <div className={styles.fontBold}>{product.brand}</div>
                                                 <div className={styles.textMuted}>{product.model}</div>
