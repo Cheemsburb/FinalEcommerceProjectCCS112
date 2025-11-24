@@ -4,22 +4,19 @@ import { useNavigate } from "react-router-dom";
 
 function Profile() {
     const navigate = useNavigate();
-    // Assuming the API Token is stored after successful login/register
     const apiToken = localStorage.getItem("apiToken");
-    
-    // --- State Management ---
+
     const [firstName, setFirstName] = useState("");
     const [lastName, setLastName] = useState("");
     const [email, setEmail] = useState("");
-    const [phone, setPhone] = useState(""); // Not explicitly in API doc, keeping for form
+    const [phone, setPhone] = useState("");
     const [newPassword, setNewPassword] = useState("");
     const [confirmPassword, setConfirmPassword] = useState("");
     const [addresses, setAddresses] = useState([]);
     const [orders, setOrders] = useState([]);
     const [isLoading, setIsLoading] = useState(true);
 
-    // --- Utility Function for Authenticated API Calls ---
-    const makeAuthRequest = useCallback(async (url, method = 'GET', body = null) => {
+    const makeAuthRequest = useCallback(async (url, method = "GET", body = null) => {
         if (!apiToken) {
             alert("Authentication token missing. Redirecting to login.");
             navigate("/login");
@@ -27,33 +24,27 @@ function Profile() {
         }
 
         const headers = {
-            'Content-Type': 'application/json',
-            'Authorization': `Bearer ${apiToken}`, // Header format from doc [cite: 15]
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${apiToken}`,
         };
 
         try {
-            const response = await fetch(`http://localhost:8000/api${url}`, { // Base URL prefix [cite: 8, 7]
+            const response = await fetch(`http://localhost:8000/api${url}`, {
                 method,
                 headers,
                 body: body ? JSON.stringify(body) : null,
             });
 
             if (response.status === 401 || response.status === 403) {
-                // Token invalid or resource forbidden [cite: 151, 164, 169]
                 alert("Session expired or unauthorized access. Please log in again.");
-                handleLogout(false); // Log out locally but don't call the API again
+                handleLogout(false);
                 return null;
             }
-            
-            if (!response.ok) {
-                throw new Error(`HTTP error! Status: ${response.status}`);
-            }
-            
-            // 204 No Content for successful DELETE [cite: 168]
-            if (response.status === 204) return true;
-            
-            return await response.json();
 
+            if (!response.ok) throw new Error(`HTTP error! Status: ${response.status}`);
+            if (response.status === 204) return true;
+
+            return await response.json();
         } catch (error) {
             console.error("API Request Failed:", error);
             alert(`API Error: ${error.message}`);
@@ -61,82 +52,58 @@ function Profile() {
         }
     }, [apiToken, navigate]);
 
-
-    // --- Data Fetching Functions (Read Operations) ---
-
-    // Load User Profile (GET /user)
     const loadUserProfile = useCallback(async () => {
-        const userData = await makeAuthRequest('/user', 'GET'); // Gets the current user's profile 
+        const userData = await makeAuthRequest("/user", "GET");
         if (userData) {
-            setFirstName(userData.first_name || ""); // Uses API fields [cite: 105]
-            setLastName(userData.last_name || ""); // Uses API fields [cite: 106]
-            setEmail(userData.email || ""); // Uses API fields [cite: 107]
-            // Phone is not in API response, keeps current empty state
+            setFirstName(userData.first_name || "");
+            setLastName(userData.last_name || "");
+            setEmail(userData.email || "");
         }
     }, [makeAuthRequest]);
 
-    // Load Addresses (GET /addresses)
     const loadAddresses = useCallback(async () => {
-        const addressesData = await makeAuthRequest('/addresses', 'GET'); // Retrieves all addresses for user 
+        const addressesData = await makeAuthRequest("/addresses", "GET");
         if (addressesData) {
-            // Map API response fields to local state fields
-            setAddresses(addressesData.map(addr => ({
-                id: addr.id,
-                shippingAddress: addr.address, // API field is 'address' [cite: 122]
-                state: addr.state, // API field is 'state' [cite: 123]
-                zipCode: addr.zip_code, // API field is 'zip_code' [cite: 124]
-                is_default: addr.is_default, // API field is 'is_default' [cite: 125]
-            })));
+            setAddresses(
+                addressesData.map((addr) => ({
+                    id: addr.id,
+                    shippingAddress: addr.address,
+                    state: addr.state,
+                    zipCode: addr.zip_code,
+                    is_default: addr.is_default,
+                }))
+            );
         } else {
             setAddresses([]);
         }
     }, [makeAuthRequest]);
 
-    // Load Orders (GET /orders)
     const loadOrders = useCallback(async () => {
-        const ordersData = await makeAuthRequest('/orders', 'GET'); // Gets list of past orders 
+        const ordersData = await makeAuthRequest("/orders", "GET");
         if (ordersData) {
-            // Note: The API doc only shows GET /orders, which returns a list. 
-            // We'll assume the structure is compatible with the old local state for display.
-            // In a real app, GET /orders would return basic orders, and GET /orders/{id} 
-            // would get the full detail[cite: 205]. For simplicity, we use the API list.
-            setOrders(ordersData || []); 
+            setOrders(ordersData || []);
         } else {
             setOrders([]);
         }
     }, [makeAuthRequest]);
 
-
-    // --- Initial Load Effect ---
     useEffect(() => {
         const loadData = async () => {
             if (apiToken) {
                 setIsLoading(true);
-                // Load all necessary data from the backend
                 await loadUserProfile();
                 await loadAddresses();
                 await loadOrders();
                 setIsLoading(false);
             } else {
-                 // no user/token: redirect to login
-                 navigate("/login");
+                navigate("/login");
             }
         };
-
         loadData();
     }, [apiToken, navigate, loadUserProfile, loadAddresses, loadOrders]);
 
-
-    // --- Local Address Management (before saving to API) ---
-
     const addAddress = () => {
-        // Add a temporary address object to the state (without an ID)
-        setAddresses([...addresses, { 
-            id: null, // Marks it as a new address to be posted to the API
-            shippingAddress: "", 
-            state: "", 
-            zipCode: "" 
-        }]);
+        setAddresses([...addresses, { id: null, shippingAddress: "", state: "", zipCode: "" }]);
     };
 
     const updateAddress = (index, field, value) => {
@@ -148,23 +115,21 @@ function Profile() {
     const removeAddress = (index) => {
         const addressToRemove = addresses[index];
         if (addressToRemove.id) {
-            // If the address exists in the backend, confirm and call DELETE API
             if (window.confirm("Are you sure you want to delete this saved address?")) {
-                makeAuthRequest(`/addresses/${addressToRemove.id}`, 'DELETE') // Deletes address 
-                    .then(success => {
+                makeAuthRequest(`/addresses/${addressToRemove.id}`, "DELETE").then(
+                    (success) => {
                         if (success) {
                             setAddresses(addresses.filter((_, i) => i !== index));
-                            alert("Address deleted successfully from the backend.");
+                            alert("Address deleted successfully.");
                         }
-                    });
+                    }
+                );
             }
         } else {
-            // Just remove it from local state if it's new (no ID)
             setAddresses(addresses.filter((_, i) => i !== index));
         }
     };
 
-    // --- Save Handler (Create & Update Operations) ---
     const handleSaveChanges = async (e) => {
         e.preventDefault();
 
@@ -176,7 +141,6 @@ function Profile() {
         setIsLoading(true);
         let saveSuccess = true;
 
-        // 1. Save Address Changes (Create new or Update existing)
         for (const addr of addresses) {
             const payload = {
                 address: addr.shippingAddress,
@@ -185,30 +149,29 @@ function Profile() {
             };
 
             if (addr.id === null) {
-                // CREATE new address (POST /addresses) 
-                const result = await makeAuthRequest('/addresses', 'POST', payload);
-                if (!result) { saveSuccess = false; break; }
-
+                const result = await makeAuthRequest("/addresses", "POST", payload);
+                if (!result) {
+                    saveSuccess = false;
+                    break;
+                }
             } else {
-                // UPDATE existing address (PUT /addresses/{id}) 
-                const result = await makeAuthRequest(`/addresses/${addr.id}`, 'PUT', payload);
-                if (!result) { saveSuccess = false; break; }
+                const result = await makeAuthRequest(`/addresses/${addr.id}`, "PUT", payload);
+                if (!result) {
+                    saveSuccess = false;
+                    break;
+                }
             }
         }
 
-        // 2. Handle Password Change (No dedicated endpoint, this is usually handled via an update user endpoint, 
-        // but for this implementation, we will skip it since we don't have a PUT /user endpoint.)
-        // **NOTE: API doc does not show a PUT/user endpoint for profile updates.** // If one existed, we would call it here. For now, only address changes are synced.
-
         if (saveSuccess) {
             alert("Changes saved successfully!");
-            // Refresh addresses to get new IDs from created items
             await loadAddresses();
             setNewPassword("");
             setConfirmPassword("");
         } else {
-            alert("Profile update failed. Check console for details.");
+            alert("Profile update failed.");
         }
+
         setIsLoading(false);
     };
 
@@ -217,13 +180,9 @@ function Profile() {
         if (!confirmLogout) return;
 
         if (callApi && apiToken) {
-            // Call POST /logout to invalidate token 
-            makeAuthRequest('/logout', 'POST')
-                .then(() => console.log("Token invalidated on backend."))
-                .catch(() => console.error("Logout API call failed."));
+            makeAuthRequest("/logout", "POST");
         }
 
-        // Clear local storage and navigate regardless of API success
         localStorage.removeItem("apiToken");
         navigate("/login");
     };
@@ -237,11 +196,9 @@ function Profile() {
             <form onSubmit={handleSaveChanges}>
                 <h2 className={style.sectionTitle}>Profile Information</h2>
 
-                {/* --- Profile Data (Currently not synced with API) --- */}
                 <div className={style.formGrid}>
                     <div className={style.formGroup}>
                         <label>First Name</label>
-                        {/* API does not expose PUT/PATCH /user, so these fields are read-only */}
                         <input type="text" value={firstName} readOnly />
                     </div>
 
@@ -257,37 +214,40 @@ function Profile() {
 
                     <div className={style.formGroup}>
                         <label>Phone</label>
-                        {/* Assuming Phone is a local-only field since it's not in the API doc */}
-                        <input type="tel" value={phone} onChange={(e) => setPhone(e.target.value)} />
+                        <input
+                            type="tel"
+                            value={phone}
+                            onChange={(e) => setPhone(e.target.value)}
+                        />
                     </div>
                 </div>
-                
-               <h2 className={style.sectionTitle}>Change Password</h2>
-                    <div className={style.formGrid}>
+
+                <h2 className={style.sectionTitle}>Change Password</h2>
+
+                <div className={style.formGrid}>
                     <div className={style.formGroup}>
-                     <label>New Password</label>
-                     {/* ADDED autoComplete="new-password" to prevent autofill */}
-                    <input 
-                     type="password" 
-                        value={newPassword} 
-                        onChange={(e) => setNewPassword(e.target.value)} 
-                            autoComplete="new-password" 
-                 />
-                </div>
+                        <label>New Password</label>
+                        <input
+                            type="password"
+                            value={newPassword}
+                            onChange={(e) => setNewPassword(e.target.value)}
+                            autoComplete="new-password"
+                        />
+                    </div>
+
                     <div className={style.formGroup}>
-                 <label>Confirm New Password</label>
-                    {/* ADDED autoComplete="new-password" to prevent autofill */}
-                    <input 
-                      type="password" 
-                     value={confirmPassword} 
-                     onChange={(e) => setConfirmPassword(e.target.value)} 
-                     autoComplete="new-password" 
-        />
-                      </div>
+                        <label>Confirm New Password</label>
+                        <input
+                            type="password"
+                            value={confirmPassword}
+                            onChange={(e) => setConfirmPassword(e.target.value)}
+                            autoComplete="new-password"
+                        />
+                    </div>
                 </div>
 
-                {/* --- Addresses (Synced with API) --- */}
                 <h2 className={style.sectionTitle}>Addresses</h2>
+
                 <table className={style.addressTable}>
                     <thead>
                         <tr>
@@ -300,25 +260,65 @@ function Profile() {
                     <tbody>
                         {addresses.length === 0 && (
                             <tr>
-                                <td colSpan="4" className={style.emptyMessage}>No addresses saved. Click "Add Another Address" to start.</td>
+                                <td colSpan="4" className={style.emptyMessage}>
+                                    No addresses saved. Click "Add Another Address" to start.
+                                </td>
                             </tr>
                         )}
+
                         {addresses.map((addr, index) => (
-                            <tr key={addr.id || index}> 
-                                {/* Key uses ID if available, otherwise index for new items */}
-                                <td><input type="text" value={addr.shippingAddress} onChange={(e) => updateAddress(index, "shippingAddress", e.target.value)} /></td>
-                                <td><input type="text" value={addr.state} onChange={(e) => updateAddress(index, "state", e.target.value)} /></td>
-                                <td><input type="text" value={addr.zipCode} onChange={(e) => updateAddress(index, "zipCode", e.target.value)} /></td>
-                                <td><button type="button" className={style.deleteAddressButton} onClick={() => removeAddress(index)}>Delete</button></td>
+                            <tr key={addr.id || index}>
+                                <td>
+                                    <input
+                                        type="text"
+                                        value={addr.shippingAddress}
+                                        onChange={(e) =>
+                                            updateAddress(index, "shippingAddress", e.target.value)
+                                        }
+                                    />
+                                </td>
+                                <td>
+                                    <input
+                                        type="text"
+                                        value={addr.state}
+                                        onChange={(e) =>
+                                            updateAddress(index, "state", e.target.value)
+                                        }
+                                    />
+                                </td>
+                                <td>
+                                    <input
+                                        type="text"
+                                        value={addr.zipCode}
+                                        onChange={(e) =>
+                                            updateAddress(index, "zipCode", e.target.value)
+                                        }
+                                    />
+                                </td>
+                                <td>
+                                    <button
+                                        type="button"
+                                        className={style.deleteAddressButton}
+                                        onClick={() => removeAddress(index)}
+                                    >
+                                        Delete
+                                    </button>
+                                </td>
                             </tr>
                         ))}
                     </tbody>
                 </table>
 
-                <button type="button" className={style.addAddressButton} onClick={addAddress}>+ Add Another Address</button>
+                <button
+                    type="button"
+                    className={style.addAddressButton}
+                    onClick={addAddress}
+                >
+                    + Add Another Address
+                </button>
 
-                {/* --- Order History (Synced with API) --- */}
                 <h2 className={style.sectionTitle}>Order History</h2>
+
                 <table className={style.orderTable}>
                     <thead>
                         <tr>
@@ -328,32 +328,64 @@ function Profile() {
                             <th>Total</th>
                         </tr>
                     </thead>
+
                     <tbody>
-                        {orders && orders.length > 0 ? (
+                        {orders.length > 0 ? (
                             orders.map((order, idx) => (
                                 <tr key={idx}>
-                                    {/* Assuming API response for GET /orders is similar to old local storage format */}
                                     <td>{order.id}</td>
-                                    <td>{order.created_at}</td>
+                                    <td>{new Date(order.created_at).toLocaleDateString()}</td>
+
                                     <td>
-                                        {/* This requires orders to have items data, which GET /orders might not include. 
-                                            We keep the previous structure for display purposes, but rely on API data. */}
-                                        {/* Replace with actual API item display logic if data is available */}
-                                        <div>Items detail not available from simple GET /orders.</div>
+                                        {order.items && order.items.length > 0 ? (
+                                            order.items.map((item, i) => (
+                                                <div key={i}>
+                                                    Product ID: {item.product_id} x {item.quantity} — ₱
+                                                    {Number(item.price_at_purchase).toLocaleString()}
+                                                </div>
+                                            ))
+                                        ) : (
+                                            <div>No items available</div>
+                                        )}
                                     </td>
-                                    <td>₱{Number(order.total).toLocaleString()}</td>
+
+                                    <td>
+                                        {order.items && order.items.length > 0
+                                            ? "₱" +
+                                              order.items
+                                                  .reduce(
+                                                      (sum, item) =>
+                                                          sum +
+                                                          Number(item.price_at_purchase) *
+                                                              Number(item.quantity),
+                                                      0
+                                                  )
+                                                  .toLocaleString()
+                                            : "₱0"}
+                                    </td>
                                 </tr>
                             ))
                         ) : (
                             <tr>
-                                <td colSpan="4" className={style.emptyMessage}>No order history yet.</td>
+                                <td colSpan="4" className={style.emptyMessage}>
+                                    No order history yet.
+                                </td>
                             </tr>
                         )}
                     </tbody>
                 </table>
 
-                <button type="submit" className={style.saveButton}>Save Changes</button>
-                <button type="button" className={style.logoutButton} onClick={() => handleLogout(true)}>Logout</button>
+                <button type="submit" className={style.saveButton}>
+                    Save Changes
+                </button>
+
+                <button
+                    type="button"
+                    className={style.logoutButton}
+                    onClick={() => handleLogout(true)}
+                >
+                    Logout
+                </button>
             </form>
         </div>
     );

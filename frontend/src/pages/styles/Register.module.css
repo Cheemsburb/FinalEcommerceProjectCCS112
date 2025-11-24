@@ -17,6 +17,7 @@
   border-radius: 16px;
   box-shadow: 0 8px 24px rgba(0, 0, 0, 0.05);
   overflow: hidden;
+  min-height: 450px;
 }
 
 .formSide {
@@ -44,15 +45,13 @@
   font-weight: 600;
   text-decoration: none;
 }
-.subtitle a:hover {
-  text-decoration: underline;
-}
 
-/* Grid for the form inputs (Registration specific) */
+.subtitle a:hover { text-decoration: underline; }
+
 .formGrid {
   display: grid;
   grid-template-columns: 1fr 1fr;
-  gap: 0 1.5rem; /* Only gap between columns */
+  gap: 1.5rem;
 }
 
 .formGroup {
@@ -70,6 +69,7 @@
 .formGroup input {
   width: 100%;
   padding: 0.75rem 1rem;
+  padding-right: 2.5rem;
   font-size: 1rem;
   border: 1px solid #ddd;
   border-radius: 8px;
@@ -80,12 +80,10 @@
 .formGroup input:focus {
   outline: none;
   border-color: #007bff;
-  box-shadow: 0 0 0 2px rgba(0, 123, 255, 0.2);
+  box-shadow: 0 0 0 2px rgba(0,123,255,0.2);
 }
 
-.passwordWrapper {
-  position: relative;
-}
+.passwordWrapper { position: relative; }
 
 .eyeIcon {
   position: absolute;
@@ -101,7 +99,6 @@
   align-items: center;
 }
 
-/* Styles for the checkbox (Registration specific) */
 .checkboxGroup {
   display: flex;
   align-items: flex-start;
@@ -109,18 +106,9 @@
   margin-top: 0.5rem;
   margin-bottom: 1.5rem;
 }
-.checkboxGroup input {
-  width: auto; 
-  margin-top: 0.2rem;
-  flex-shrink: 0;
-}
-.checkboxGroup label {
-  font-size: 0.875rem;
-  color: #555;
-  margin-bottom: 0;
-  font-weight: 400;
-  line-height: 1.4;
-}
+
+.checkboxGroup input { width: auto; margin-top: 0.2rem; flex-shrink: 0; }
+.checkboxGroup label { font-size: 0.875rem; color: #555; font-weight: 400; line-height: 1.4; }
 
 .loginButton {
   width: 100%;
@@ -135,26 +123,15 @@
   margin-top: 1rem;
   transition: background-color 0.2s;
 }
-.loginButton:hover {
-  background-color: #444;
-}
 
-.forgotLink {
-  display: block;
-  text-align: center;
-  margin-top: 1.5rem;
-  font-size: 0.875rem;
-  color: #555;
-  text-decoration: none;
-}
-.forgotLink:hover {
-  text-decoration: underline;
-}
+.loginButton:hover { background-color: #444; }
 
-/* Carousel Styles */
+.error { color: red; margin-bottom: 10px; }
+.success { color: green; margin-bottom: 10px; font-weight: 600; }
+
 .imageSide {
   background-color: #e0e0e0;
-  min-height: 300px;
+  min-height: 100%;
   position: relative;
   overflow: hidden;
 }
@@ -170,35 +147,12 @@
   transition: transform 0.7s ease-in-out;
 }
 
-.noTransition {
-  transition: none;
-}
+.noTransition { transition: none; }
 
-
-/* Mobile Responsive */
 @media (max-width: 900px) {
-  .card {
-    grid-template-columns: 1fr;
-    max-width: 450px;
-    margin: 1rem;
-  }
-
-  /* Stack the form grid on mobile */
-  .formGrid {
-    grid-template-columns: 1fr;
-    gap: 0; 
-  }
-
-  .imageSide {
-    order: -1;
-    min-height: 250px;
-  }
-
-  .formSide {
-    padding: 2rem;
-  }
-
-  .formSide h1 {
-    font-size: 2rem;
-  }
+  .card { grid-template-columns: 1fr; max-width: 450px; margin: 1rem; }
+  .formGrid { grid-template-columns: 1fr; gap: 1rem; }
+  .imageSide { order: -1; min-height: 250px; }
+  .formSide { padding: 2rem; }
+  .formSide h1 { font-size: 2rem; }
 }
