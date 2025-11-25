@@ -1,20 +1,27 @@
 .profileContainer {
-  max-width: 900px;
+  max-width: 1200px;
   margin: 2rem auto;
   padding: 2rem;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 2rem;
   background-color: #ffffff;
+}
+
+.leftColumn,
+.rightColumn {
+  background-color: #ffffff;
+  padding: 1.5rem;
+  border-radius: 12px;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.05);
 }
 
 .sectionTitle {
   font-size: 1.25rem;
   font-weight: 600;
   color: #333;
-  margin-top: 2rem;
-  margin-bottom: 1.5rem;
-}
-
-.sectionTitle:first-of-type {
   margin-top: 0;
+  margin-bottom: 1.5rem;
 }
 
 .formGrid {
@@ -68,36 +75,17 @@
   transition: background-color 0.2s;
 }
 
-.saveButton {
-  background-color: #252525;
-  margin-top: 2.5rem;
-}
-
-.logoutButton {
-  background-color: #252525;
-  margin-top: 1rem;
-}
-
-.addAddressButton {
-  background-color: #252525;
-  margin-top: 1.5rem;
-}
-
-.deleteAddressButton {
-  background-color: #dc3545;
-}
+.saveButton { background-color: #252525; margin-top: 2rem; }
+.logoutButton { background-color: #252525; margin-top: 1rem; }
+.addAddressButton { background-color: #252525; margin-top: 1.5rem; }
+.deleteAddressButton { background-color: #dc3545; }
 
 .saveButton:hover,
 .logoutButton:hover,
-.addAddressButton:hover {
-  background-color: #444;
-}
+.addAddressButton:hover { background-color: #444; }
+.deleteAddressButton:hover { background-color: #b02a37; }
 
-.deleteAddressButton:hover {
-  background-color: #b02a37;
-}
-
-/* --- Table Styles --- */
+/* Table Styles */
 .addressTable,
 .orderTable {
   width: 100%;
@@ -140,34 +128,18 @@
   padding: 1rem 0;
 }
 
-@media (max-width: 768px) {
+.orderTableWrapper {
+  max-height: 600px;
+  overflow-y: auto;
+  margin-top: 1rem;
+}
+
+@media (max-width: 1024px) {
   .profileContainer {
-    padding: 1rem;
-  }
-
-  .formGrid {
     grid-template-columns: 1fr;
-    gap: 1.5rem 0;
   }
-
-  .addressTable th,
-  .addressTable td,
-  .orderTable th,
-  .orderTable td {
-    padding: 0.5rem;
+  .leftColumn,
+  .rightColumn {
+    margin-bottom: 2rem;
   }
-}
-
-/* Small helper table style */
-.table {
-  width: 100%;
-  border-collapse: collapse;
-  margin-top: 15px;
-}
-
-.table th,
-.table td {
-  border: 1px solid #ccc;
-  padding: 10px;
-  text-align: left;
 }
