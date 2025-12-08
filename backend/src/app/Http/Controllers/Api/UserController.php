@@ -62,6 +62,9 @@ class UserController extends Controller
      */
     public function store(Request $request)
     {
+        // 1. Log that we reached this method
+        \Illuminate\Support\Facades\Log::info('Admin attempting to create user', $request->all());
+
         if ($request->user()->role !== 'admin') {
             return response()->json(['message' => 'Unauthorized'], 403);
         }
@@ -75,6 +78,9 @@ class UserController extends Controller
             'role' => 'required|in:admin,customer',
         ]);
 
+        // 2. Log the validated data
+        \Illuminate\Support\Facades\Log::info('Validation passed', $validatedData);
+
         $user = User::create([
             'first_name' => $validatedData['first_name'],
             'last_name' => $validatedData['last_name'],
@@ -84,7 +90,9 @@ class UserController extends Controller
             'role' => $validatedData['role'],
         ]);
 
-        // FIX: Create a cart for the new customer so they can shop
+        // 3. Log the created user ID
+        \Illuminate\Support\Facades\Log::info('User created with ID: ' . $user->id);
+
         if ($user->role === 'customer') {
             $user->cart()->create();
         }

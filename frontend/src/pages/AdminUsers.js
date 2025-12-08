@@ -29,8 +29,13 @@ export default function AdminUsers({ token }) {
     const fetchUsers = async () => {
         try {
             setLoading(true);
-            const response = await fetch(`${API}/users`, {
-                headers: { Authorization: `Bearer ${token}` }
+            // ADDED: ?t=${Date.now()} forces the browser to get fresh data
+            const response = await fetch(`${API}/users?t=${Date.now()}`, {
+                headers: { 
+                    Authorization: `Bearer ${token}`,
+                    'Cache-Control': 'no-cache',
+                    'Pragma': 'no-cache'
+                }
             }); 
             if (response.ok) {
                 const data = await response.json();
@@ -58,10 +63,12 @@ export default function AdminUsers({ token }) {
             return;
         }
 
+        // Headers: We add 'Accept' to prevent the "Route [login]" crash if something else fails
         const config = {
             headers: { 
                 Authorization: `Bearer ${token}`,
-                'Content-Type': 'application/json'
+                'Content-Type': 'application/json',
+                'Accept': 'application/json' 
             }
         };
 
@@ -69,7 +76,7 @@ export default function AdminUsers({ token }) {
             let response;
             
             if (isEditing) {
-                // For Update: Exclude confirmPassword and empty password
+                // ... (Keep existing Edit logic as is) ...
                 const { password, confirmPassword, ...updateData } = formData; 
                 const payload = password ? { ...updateData, password } : updateData;
                 
@@ -79,14 +86,26 @@ export default function AdminUsers({ token }) {
                     body: JSON.stringify(payload)
                 });
             } else {
-                // For Create: Exclude ID and confirmPassword
-                // IMPORTANT: Removing 'id' prevents the "Integrity constraint violation" error
-                const { id, confirmPassword, ...createData } = formData;
+                // === CHANGED SECTION: USE REGISTER ROUTE ===
                 
-                response = await fetch(`${API}/users`, {
+                // Prepare payload for /register
+                // 1. Rename 'confirmPassword' to 'password_confirmation' (Required by Laravel)
+                // 2. Include 'role' so you can create Admins
+                const registerPayload = {
+                    first_name: formData.first_name,
+                    last_name: formData.last_name,
+                    email: formData.email,
+                    phone_number: formData.phone_number,
+                    password: formData.password,
+                    password_confirmation: formData.confirmPassword, // Map this field
+                    role: formData.role
+                };
+                
+                // Point to /register instead of /users
+                response = await fetch(`${API}/register`, {
                     method: 'POST',
                     headers: config.headers,
-                    body: JSON.stringify(createData)
+                    body: JSON.stringify(registerPayload)
                 });
             }
 
@@ -96,7 +115,9 @@ export default function AdminUsers({ token }) {
                 fetchUsers();
             } else {
                 const errorData = await response.json();
-                alert("Failed to save user. " + (errorData.message || ""));
+                // Improved error message handling
+                const msg = errorData.message || JSON.stringify(errorData.errors) || "Unknown error";
+                alert("Failed to save user: " + msg);
             }
         } catch (error) {
             console.error("Error saving user", error);
