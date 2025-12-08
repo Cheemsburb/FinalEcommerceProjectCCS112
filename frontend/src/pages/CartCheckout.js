@@ -2,6 +2,7 @@ import React, { useState, useEffect, useCallback } from "react";
 import { useNavigate } from "react-router-dom"; 
 import styles from "./styles/CartCheckout.module.css";
 import images from "../assets/imageLoader";
+import LoginRedirectModal from "../components/LoginRedirectModal"; // <--- Import the Modal
 
 const API = "http://localhost:8000/api";
 
@@ -27,6 +28,9 @@ function CartCheckout({ cartItems, setCartItems, removeFromCart, clearCart, toke
   const [promoStatus, setPromoStatus] = useState("");
   const [showForm, setShowForm] = useState(false);
   const [itemToRemove, setItemToRemove] = useState(null);
+
+  // New state for the Login Modal
+  const [isLoginModalOpen, setIsLoginModalOpen] = useState(false);
 
   const fetchCart = useCallback(async () => {
     if (!token) return;
@@ -74,15 +78,18 @@ function CartCheckout({ cartItems, setCartItems, removeFromCart, clearCart, toke
     }
   }, [token]);
 
+  // FIXED: Removed alert() and navigate() loop. 
+  // Now simply opens the modal if token is missing.
   useEffect(() => {
     if (!token) {
-      alert("Please log in to access the cart.");
-      navigate("/login");
+      setIsLoginModalOpen(true);
+      setLoading(false); // Stop loading so the modal can show
       return;
     }
+    
     fetchCart();
     fetchAddresses();
-  }, [token, navigate, fetchCart, fetchAddresses]);
+  }, [token, fetchCart, fetchAddresses]);
 
   const removeItem = (id) => setItemToRemove(id);
 
@@ -117,12 +124,12 @@ function CartCheckout({ cartItems, setCartItems, removeFromCart, clearCart, toke
 
   const handleChange = (e) => setForm({ ...form, [e.target.name]: e.target.value });
 
-  // Persist cart item quantity change to server (adjust endpoint/method if your API differs)
+  // Persist cart item quantity change to server
   const updateCartItemOnServer = useCallback(async (cartItemId, quantity) => {
     if (!token) return false;
     try {
       const res = await fetch(`${API}/cart/${cartItemId}`, {
-        method: "PUT", // change to PATCH if backend expects
+        method: "PUT",
         headers: {
           "Content-Type": "application/json",
           Authorization: `Bearer ${token}`,
@@ -140,14 +147,12 @@ function CartCheckout({ cartItems, setCartItems, removeFromCart, clearCart, toke
   const handleQuantityChange = async (cartItemId, value) => {
     const qty = Math.max(1, Number(value) || 1);
 
-    // optimistic UI update
     setCartItems(prev =>
       prev.map(item =>
         item.cartItemId === cartItemId ? { ...item, quantity: qty } : item
       )
     );
 
-    // persist change, rollback on failure
     const ok = await updateCartItemOnServer(cartItemId, qty);
     if (!ok) {
       await fetchCart();
@@ -158,7 +163,12 @@ function CartCheckout({ cartItems, setCartItems, removeFromCart, clearCart, toke
   const handleSubmit = async (e) => {
     e.preventDefault();
     let shippingAddressId = form.address_id;
-    if (!token) { alert("Authentication required for checkout. Please log in."); navigate("/login"); return; }
+    
+    if (!token) { 
+      setIsLoginModalOpen(true);
+      return; 
+    }
+    
     if (!shippingAddressId) { alert("Please select a shipping address."); return; }
 
     if (shippingAddressId === "new") {
@@ -184,7 +194,6 @@ function CartCheckout({ cartItems, setCartItems, removeFromCart, clearCart, toke
     }
 
     try {
-      // build items payload with product_id, quantity and unit price (price_at_purchase)
       const itemsPayload = cartItems.map(i => ({
         product_id: i.product_id,
         quantity: Number(i.quantity || 1),
@@ -218,10 +227,17 @@ function CartCheckout({ cartItems, setCartItems, removeFromCart, clearCart, toke
     }
   };
 
-  if (loading) return <p>Loading cart...</p>;
+  if (loading) return <div className={styles.loadingContainer}><p>Loading cart...</p></div>;
 
   return (
     <section className={styles.cartPage}>
+      {/* Login Redirect Modal */}
+      <LoginRedirectModal 
+        isOpen={isLoginModalOpen}
+        onClose={() => navigate("/")} // Redirect to Home if they cancel
+        onLogin={() => navigate("/login")} // Redirect to Login if they confirm
+      />
+
       <h2 className={styles.yourCart}>Your Cart</h2>
       <div className={styles.cartLayout}>
         <section className={styles.cartSection}>

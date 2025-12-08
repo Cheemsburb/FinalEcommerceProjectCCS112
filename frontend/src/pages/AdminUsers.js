@@ -15,11 +15,13 @@ export default function AdminUsers({ token }) {
         first_name: '',
         last_name: '',
         email: '',
+        phone_number: '', // Added field
         password: '', 
         role: 'customer'
     };
     const [formData, setFormData] = useState(initialFormState);
 
+    // ... useEffect and fetchUsers (same as original)
     useEffect(() => {
         fetchUsers();
     }, [token]);
@@ -43,10 +45,12 @@ export default function AdminUsers({ token }) {
         }
     };
 
+
     const handleChange = (e) => {
         setFormData({ ...formData, [e.target.name]: e.target.value });
     };
 
+    // ... handleSubmit, handleEdit, handleDelete, closeModal (same logic, updated for phone_number implicitly)
     const handleSubmit = async (e) => {
         e.preventDefault();
         const config = {
@@ -89,7 +93,8 @@ export default function AdminUsers({ token }) {
 
     const handleEdit = (user) => {
         setIsEditing(true);
-        setFormData({ ...user, password: '' });
+        // Ensure phone_number is set, or empty string if null
+        setFormData({ ...user, phone_number: user.phone_number || '', password: '' });
         setIsModalOpen(true);
     };
 
@@ -118,6 +123,7 @@ export default function AdminUsers({ token }) {
         setFormData(initialFormState);
     };
 
+
     return (
         <div className={styles.adminContainer}>
             <div className={styles.adminNav}>
@@ -139,15 +145,16 @@ export default function AdminUsers({ token }) {
                             <th>ID</th>
                             <th>User</th>
                             <th>Role</th>
+                            <th>Phone</th> {/* Added Column */}
                             <th>Joined</th>
                             <th className={styles.textRight}>Actions</th>
                         </tr>
                     </thead>
                     <tbody>
                         {loading ? (
-                            <tr><td colSpan="5" className={styles.textCenter}>Loading users...</td></tr>
+                            <tr><td colSpan="6" className={styles.textCenter}>Loading users...</td></tr>
                         ) : users.length === 0 ? (
-                            <tr><td colSpan="5" className={styles.textCenter}>No users found.</td></tr>
+                            <tr><td colSpan="6" className={styles.textCenter}>No users found.</td></tr>
                         ) : (
                             users.map((user) => (
                                 <tr key={user.id}>
@@ -168,6 +175,8 @@ export default function AdminUsers({ token }) {
                                             {user.role.toUpperCase()}
                                         </span>
                                     </td>
+                                    {/* Display Phone */}
+                                    <td>{user.phone_number || <span className={styles.textMuted}>-</span>}</td>
                                     <td className={styles.textMuted}>
                                         {new Date(user.created_at).toLocaleDateString()}
                                     </td>
@@ -206,6 +215,12 @@ export default function AdminUsers({ token }) {
                             <div className={styles.formGroup}>
                                 <label>Email</label>
                                 <input type="email" name="email" value={formData.email} onChange={handleChange} required />
+                            </div>
+
+                            {/* Added Phone Number Field */}
+                            <div className={styles.formGroup}>
+                                <label>Phone Number</label>
+                                <input type="tel" name="phone_number" value={formData.phone_number} onChange={handleChange} required />
                             </div>
 
                             <div className={styles.formGroup}>

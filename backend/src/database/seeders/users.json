@@ -4,48 +4,55 @@
     "last_name": "User",
     "email": "admin@gmail.com",
     "password": "adminpass",
-    "role": "admin"
+    "role": "admin",
+    "phone_number": "09171112222"
   },
   {
     "first_name": "Correllene",
     "last_name": "Dela Cruz",
     "email": "ira@gmail.com",
     "password": "irapass",
-    "role": "customer"
+    "role": "customer",
+    "phone_number": "09183334444"
   },
   {
     "first_name": "Josua",
     "last_name": "Santos",
     "email": "josua@gmail.com",
     "password": "josuapass",
-    "role": "customer"
+    "role": "customer",
+    "phone_number": "09195556666"
   },
   {
     "first_name": "Benedic",
     "last_name": "Reyes",
     "email": "benedic@gmail.com",
     "password": "benedicpass",
-    "role": "customer"
+    "role": "customer",
+    "phone_number": "09207778888"
   },
   {
     "first_name": "Gladwyn",
     "last_name": "Garcia",
     "email": "glad@gmail.com",
     "password": "gladpass",
-    "role": "customer"
+    "role": "customer",
+    "phone_number": "09219990000"
   },
   {
     "first_name": "Drei",
     "last_name": "Tampururot",
     "email": "drei@gmail.com",
     "password": "dreipass",
-    "role": "customer"
+    "role": "customer",
+    "phone_number": "09221239876"
   },
   {
     "first_name": "Renz",
     "last_name": "De Jesus",
     "email": "renz@gmail.com",
     "password": "renzpass",
-    "role": "customer"
+    "role": "customer",
+    "phone_number": "09235432109"
   }
 ]

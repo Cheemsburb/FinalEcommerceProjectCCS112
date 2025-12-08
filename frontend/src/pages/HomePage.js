@@ -47,53 +47,20 @@ const sampleReviews = [
 // API URL
 const API = "http://localhost:8000/api";
 
-function HomePage() {
-  const [token, setToken] = useState(localStorage.getItem("authToken"));
-  const [isValidToken, setIsValidToken] = useState(false);
+function HomePage({ addToCart, token }) {
   const [products, setProducts] = useState([]);
   const [loading, setLoading] = useState(true);
   const [showAllBrands, setShowAllBrands] = useState(false);
-  const [showTopBanner, setShowTopBanner] = useState(!token);
   const carouselRef = useRef(null);
-
-  // Verify token validity
-  useEffect(() => {
-    const verifyToken = async () => {
-      if (!token) {
-        setIsValidToken(false);
-        setShowTopBanner(true);
-        return;
-      }
-      try {
-        const res = await fetch(`${API}/verify-token`, {
-          headers: { Authorization: `Bearer ${token}` },
-        });
-        if (res.ok) {
-          setIsValidToken(true);
-          setShowTopBanner(false);
-        } else {
-          localStorage.removeItem("authToken");
-          setIsValidToken(false);
-          setShowTopBanner(true);
-        }
-      } catch (err) {
-        console.error("Token verification failed:", err);
-        localStorage.removeItem("authToken");
-        setIsValidToken(false);
-        setShowTopBanner(true);
-      }
-    };
-
-    verifyToken();
-  }, [token]);
 
   // Fetch products from API or fallback to JSON
   useEffect(() => {
     const fetchProducts = async () => {
       try {
-        const res = await fetch(`${API}/products`, {
-          headers: isValidToken ? { Authorization: `Bearer ${token}` } : {},
-        });
+        // Pass token if available for authenticated endpoints
+        const headers = token ? { Authorization: `Bearer ${token}` } : {};
+        const res = await fetch(`${API}/products`, { headers });
+        
         if (!res.ok) throw new Error(`HTTP error! status: ${res.status}`);
         const data = await res.json();
         setProducts(data);
@@ -106,7 +73,7 @@ function HomePage() {
     };
 
     fetchProducts();
-  }, [isValidToken, token]);
+  }, [token]);
 
   // Pre-filter product sets
   const rolexProducts = products.filter(p => p.brand === "Rolex").slice(0, 4);
@@ -126,13 +93,6 @@ function HomePage() {
     }
   };
 
-  const handleLogout = () => {
-    localStorage.removeItem("authToken");
-    setToken(null);
-    setIsValidToken(false);
-    setShowTopBanner(true);
-  };
-
   return (
     <main>
 
@@ -144,11 +104,7 @@ function HomePage() {
           <Link to="/products">
             <button className={style.heroButton}>Go Shopping</button>
           </Link>
-          {isValidToken && (
-            <button onClick={handleLogout} className={style.logoutButton}>
-              Logout
-            </button>
-          )}
+          {/* Logout button removed as requested */}
         </div>
         <div className={style.heroImageContainer}>
           <img src={heroNew} alt="Models wearing watches" className={style.heroImage} />
@@ -179,7 +135,7 @@ function HomePage() {
               <hr className={style.divider} />
               <div className={style.productGrid}>
                 {section.products.map(product => (
-                  <ProductCard key={product.id} {...product} />
+                  <ProductCard key={product.id} {...product} addToCart={addToCart} token={token} />
                 ))}
               </div>
               <Link to={`/products?brand=${encodeURIComponent(section.brand)}`} className={style.viewAllButton}>

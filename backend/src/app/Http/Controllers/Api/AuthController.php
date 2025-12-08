@@ -16,6 +16,7 @@ class AuthController extends Controller
             'first_name' => 'required|string|max:255',
             'last_name' => 'required|string|max:255',
             'email' => 'required|string|email|max:255|unique:users',
+            'phone_number' => 'required|string|max:20', // Added validation
             'password' => 'required|string|min:8|confirmed',
         ]);
 
@@ -23,6 +24,7 @@ class AuthController extends Controller
             'first_name' => $request->first_name,
             'last_name' => $request->last_name,
             'email' => $request->email,
+            'phone_number' => $request->phone_number, // Added field
             'password' => Hash::make($request->password),
         ]);
 

@@ -10,17 +10,11 @@ use Illuminate\Validation\Rule;
 
 class UserController extends Controller
 {
-    /**
-     * Display the authenticated user's details.
-     */
     public function show(Request $request)
     {
         return $request->user();
     }
 
-    /**
-     * Update the authenticated user's profile.
-     */
     public function update(Request $request)
     {
         $user = $request->user();
@@ -28,10 +22,11 @@ class UserController extends Controller
         $validatedData = $request->validate([
             'first_name' => 'sometimes|string|max:255',
             'last_name' => 'sometimes|string|max:255',
+            'phone_number' => 'sometimes|string|max:20', // Added validation
             'email' => [
                 'sometimes', 
                 'email', 
-                Rule::unique('users')->ignore($user->id), // Allow them to keep their current email
+                Rule::unique('users')->ignore($user->id),
             ],
             'password' => 'sometimes|string|min:8|confirmed',
         ]);
@@ -45,12 +40,8 @@ class UserController extends Controller
         return response()->json($user);
     }
 
-    /**
-     * [ADMIN ONLY] Display a listing of all users.
-     */
     public function index(Request $request)
     {
-        // Check if the requester is an admin
         if ($request->user()->role !== 'admin') {
             return response()->json(['message' => 'Unauthorized'], 403);
         }
@@ -58,44 +49,35 @@ class UserController extends Controller
         return User::all();
     }
 
-    /**
-     * [ADMIN ONLY] Create a new user.
-     */
     public function store(Request $request)
     {
-        // Check if the requester is an admin
         if ($request->user()->role !== 'admin') {
             return response()->json(['message' => 'Unauthorized'], 403);
         }
 
-        // Validate the incoming data
         $validatedData = $request->validate([
             'first_name' => 'required|string|max:255',
             'last_name' => 'required|string|max:255',
             'email' => 'required|string|email|max:255|unique:users',
+            'phone_number' => 'required|string|max:20', // Added validation
             'password' => 'required|string|min:8',
-            'role' => 'required|in:admin,customer', // Ensure role is valid
+            'role' => 'required|in:admin,customer',
         ]);
 
-        // Create the user
         $user = User::create([
             'first_name' => $validatedData['first_name'],
             'last_name' => $validatedData['last_name'],
             'email' => $validatedData['email'],
-            'password' => Hash::make($validatedData['password']), // Hash the password
+            'phone_number' => $validatedData['phone_number'], // Added field
+            'password' => Hash::make($validatedData['password']),
             'role' => $validatedData['role'],
         ]);
 
-        // Return the new user
         return response()->json($user, 201);
     }
 
-    /**
-     * [ADMIN ONLY] Update a specific user's details.
-     */
     public function updateUser(Request $request, $id)
     {
-        // Check if requester is admin
         if ($request->user()->role !== 'admin') {
             return response()->json(['message' => 'Unauthorized'], 403);
         }
@@ -106,23 +88,21 @@ class UserController extends Controller
             return response()->json(['message' => 'User not found'], 404);
         }
 
-        // Validate input
         $validatedData = $request->validate([
             'first_name' => 'required|string|max:255',
             'last_name'  => 'required|string|max:255',
-            // Unique check ignores the current user's ID
-            'email'      => 'required|email|unique:users,email,' . $user->id, 
+            'email'      => 'required|email|unique:users,email,' . $user->id,
+            'phone_number' => 'required|string|max:20', // Added validation
             'role'       => 'required|in:admin,customer',
-            'password'   => 'nullable|string|min:8', // Password is optional
+            'password'   => 'nullable|string|min:8',
         ]);
 
-        // Update fields
         $user->first_name = $validatedData['first_name'];
         $user->last_name  = $validatedData['last_name'];
         $user->email      = $validatedData['email'];
+        $user->phone_number = $validatedData['phone_number']; // Added field
         $user->role       = $validatedData['role'];
 
-        // Only hash and update password if a new one was provided
         if (!empty($validatedData['password'])) {
             $user->password = Hash::make($validatedData['password']);
         }
@@ -132,12 +112,8 @@ class UserController extends Controller
         return response()->json($user);
     }
 
-    /**
-     * [ADMIN ONLY] Delete a specific user.
-     */
     public function destroy(Request $request, $id)
     {
-        // Check if the requester is an admin
         if ($request->user()->role !== 'admin') {
             return response()->json(['message' => 'Unauthorized'], 403);
         }
@@ -148,7 +124,6 @@ class UserController extends Controller
             return response()->json(['message' => 'User not found'], 404);
         }
 
-        // Prevent admin from deleting themselves
         if ($userToDelete->id === $request->user()->id) {
             return response()->json(['message' => 'You cannot delete your own account via this endpoint.'], 400);
         }

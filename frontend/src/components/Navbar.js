@@ -7,7 +7,8 @@ import searchMobile from "../assets/designs/icons/search-mobile.png";
 import dropdownIcon from "../assets/designs/icons/dropdown.png";
 import imageLoader from "../assets/imageLoader";
 // Removed: import products from "../assets/products.json";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom"; // <--- Added useNavigate
+import LoginRedirectModal from "./LoginRedirectModal"; // <--- Added Import
 
 const CATEGORIES = ["Men's", "Women's", "Formal", "Sportswear"];
 const BRANDS = ["Rolex", "Omega", "Seiko", "Richard Mille", "Casio"];
@@ -18,13 +19,17 @@ function Navbar({ onSearchChange, user, signOut }) {
   const [searchQuery, setSearchQuery] = useState("");
   const [searchResults, setSearchResults] = useState([]);
   
-  // New state to store products fetched from API
   const [products, setProducts] = useState([]); 
 
   const [openDropdown, setOpenDropdown] = useState(null);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [isMobileSearchOpen, setIsMobileSearchOpen] = useState(false);
+  
+  // NEW STATE FOR LOGIN MODAL
+  const [isLoginModalOpen, setIsLoginModalOpen] = useState(false);
+  
   const searchContainerRef = useRef(null);
+  const navigate = useNavigate(); // <--- Init hook
 
   useEffect(() => {
     const storedToken = localStorage.getItem("authToken");
@@ -32,7 +37,6 @@ function Navbar({ onSearchChange, user, signOut }) {
     setShowTopBanner(!storedToken);
   }, [user]);
 
-  // Fetch products from API on mount
   useEffect(() => {
     const fetchProducts = async () => {
       try {
@@ -59,7 +63,6 @@ function Navbar({ onSearchChange, user, signOut }) {
       return;
     }
     const lowerCaseQuery = searchQuery.toLowerCase();
-    // Now filters the 'products' state fetched from API
     const filtered = products.filter(
       (product) =>
         product.model.toLowerCase().includes(lowerCaseQuery) ||
@@ -97,8 +100,27 @@ function Navbar({ onSearchChange, user, signOut }) {
     return () => window.removeEventListener('resize', handleResize);
   }, []);
 
+  // --- NEW HANDLER FOR PROTECTED NAVIGATION ---
+  const handleAuthNavigation = (path) => {
+    if (user) {
+      navigate(path);
+    } else {
+      setIsLoginModalOpen(true);
+    }
+  };
+
   return (
     <header className={style.navbar} tabIndex="-1">
+      {/* Login Required Modal */}
+      <LoginRedirectModal 
+        isOpen={isLoginModalOpen}
+        onClose={() => setIsLoginModalOpen(false)}
+        onLogin={() => {
+          setIsLoginModalOpen(false);
+          navigate("/login");
+        }}
+      />
+
       {/* Top Banner */}
       {showTopBanner && (
         <div className={style.topBanner}>
@@ -190,12 +212,14 @@ function Navbar({ onSearchChange, user, signOut }) {
             <button className={`${style.iconButton} ${style.searchIconButtonMobile}`} onClick={toggleMobileSearch}>
               <img src={searchMobile} alt="Search" className={style.actionIcon} />
             </button>
-            <Link to="/cart" className={style.iconButton}>
-              <img src={cartIcon} alt="" className={style.actionIcon} />
-            </Link>
-            <Link to="/profile" className={style.iconButton}>
-              <img src={profileIcon} alt="" className={style.actionIcon} />
-            </Link>
+            
+            {/* UPDATED CART AND PROFILE LINKS TO USE BUTTONS WITH CHECK */}
+            <button className={style.iconButton} onClick={() => handleAuthNavigation('/cart')}>
+              <img src={cartIcon} alt="Cart" className={style.actionIcon} />
+            </button>
+            <button className={style.iconButton} onClick={() => handleAuthNavigation('/profile')}>
+              <img src={profileIcon} alt="Profile" className={style.actionIcon} />
+            </button>
             
             {/* Logout Button */}
             {user && (
