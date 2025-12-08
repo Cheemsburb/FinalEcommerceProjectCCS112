@@ -2,7 +2,7 @@ import React, { useState, useEffect, useCallback } from "react";
 import { useNavigate } from "react-router-dom"; 
 import styles from "./styles/CartCheckout.module.css";
 import images from "../assets/imageLoader";
-import LoginRedirectModal from "../components/LoginRedirectModal"; // <--- Import the Modal
+import LoginRedirectModal from "../components/LoginRedirectModal"; 
 
 const API = "http://localhost:8000/api";
 
@@ -32,6 +32,7 @@ function CartCheckout({ cartItems, setCartItems, removeFromCart, clearCart, toke
   // New state for the Login Modal
   const [isLoginModalOpen, setIsLoginModalOpen] = useState(false);
 
+  // 1. Fetch Cart
   const fetchCart = useCallback(async () => {
     if (!token) return;
     setLoading(true);
@@ -62,6 +63,7 @@ function CartCheckout({ cartItems, setCartItems, removeFromCart, clearCart, toke
     }
   }, [token, setCartItems]);
 
+  // 2. Fetch Addresses (and auto-select default)
   const fetchAddresses = useCallback(async () => {
     if (!token) return;
     try {
@@ -70,26 +72,49 @@ function CartCheckout({ cartItems, setCartItems, removeFromCart, clearCart, toke
       const data = await res.json();
       
       setAddresses(Array.isArray(data) ? data : []);
+      
+      // Auto-select default address if available
       const defaultAddr = data.find(addr => addr.is_default) || data[0];
-      if (defaultAddr) setForm(prev => ({ ...prev, address_id: defaultAddr.id }));
+      if (defaultAddr) {
+        setForm(prev => ({ ...prev, address_id: defaultAddr.id }));
+      }
     } catch (err) {
       console.error("Error fetching addresses:", err);
       setAddresses([]);
     }
   }, [token]);
 
-  // FIXED: Removed alert() and navigate() loop. 
-  // Now simply opens the modal if token is missing.
+  // 3. NEW: Fetch User Profile to pre-fill Name and Phone
+  const fetchUserProfile = useCallback(async () => {
+    if (!token) return;
+    try {
+      const res = await fetch(`${API}/user`, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      if (res.ok) {
+        const userData = await res.json();
+        setForm(prev => ({
+          ...prev,
+          name: `${userData.first_name} ${userData.last_name}`,
+          contact_number: userData.phone_number || "" 
+        }));
+      }
+    } catch (err) {
+      console.error("Error fetching user profile:", err);
+    }
+  }, [token]);
+
   useEffect(() => {
     if (!token) {
       setIsLoginModalOpen(true);
-      setLoading(false); // Stop loading so the modal can show
+      setLoading(false); 
       return;
     }
     
     fetchCart();
     fetchAddresses();
-  }, [token, fetchCart, fetchAddresses]);
+    fetchUserProfile(); // <--- Call the new function here
+  }, [token, fetchCart, fetchAddresses, fetchUserProfile]);
 
   const removeItem = (id) => setItemToRemove(id);
 
@@ -124,7 +149,6 @@ function CartCheckout({ cartItems, setCartItems, removeFromCart, clearCart, toke
 
   const handleChange = (e) => setForm({ ...form, [e.target.name]: e.target.value });
 
-  // Persist cart item quantity change to server
   const updateCartItemOnServer = useCallback(async (cartItemId, quantity) => {
     if (!token) return false;
     try {
@@ -234,8 +258,8 @@ function CartCheckout({ cartItems, setCartItems, removeFromCart, clearCart, toke
       {/* Login Redirect Modal */}
       <LoginRedirectModal 
         isOpen={isLoginModalOpen}
-        onClose={() => navigate("/")} // Redirect to Home if they cancel
-        onLogin={() => navigate("/login")} // Redirect to Login if they confirm
+        onClose={() => navigate("/")} 
+        onLogin={() => navigate("/login")} 
       />
 
       <h2 className={styles.yourCart}>Your Cart</h2>

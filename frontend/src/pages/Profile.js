@@ -1,7 +1,6 @@
 import React, { useState, useEffect, useCallback } from "react";
 import style from "./styles/Profile.module.css";
 import { useNavigate } from "react-router-dom";
-import productsData from "../assets/products.json";
 
 function Profile() {
     const navigate = useNavigate();
@@ -10,15 +9,26 @@ function Profile() {
     const [firstName, setFirstName] = useState("");
     const [lastName, setLastName] = useState("");
     const [email, setEmail] = useState("");
-    const [phoneNumber, setPhoneNumber] = useState(""); // Changed variable name for consistency
+    const [phoneNumber, setPhoneNumber] = useState("");
     const [newPassword, setNewPassword] = useState("");
     const [confirmPassword, setConfirmPassword] = useState("");
     const [addresses, setAddresses] = useState([]);
     const [orders, setOrders] = useState([]);
     const [isLoading, setIsLoading] = useState(true);
 
+    // This function handles the actual logout logic (clearing token, redirecting)
+    // It is kept because it's used when the session expires or password changes.
+    const handleLogout = (callApi = true) => {
+        // Only ask for confirmation if this is a manual logout (callApi is true)
+        // If callApi is false (forced logout due to error), skip confirmation
+        if (callApi && !window.confirm("Are you sure you want to logout?")) return;
+        
+        if (callApi) makeAuthRequest("/logout", "POST");
+        localStorage.removeItem("apiToken");
+        navigate("/login");
+    };
+
     const makeAuthRequest = useCallback(async (url, method = "GET", body = null) => {
-        // ... (same as original file)
         if (!apiToken) {
             alert("Authentication token missing. Redirecting to login.");
             navigate("/login");
@@ -39,7 +49,7 @@ function Profile() {
 
             if (response.status === 401 || response.status === 403) {
                 alert("Session expired. Please log in again.");
-                handleLogout(false);
+                handleLogout(false); // Forced logout
                 return null;
             }
 
@@ -60,11 +70,10 @@ function Profile() {
             setFirstName(userData.first_name || "");
             setLastName(userData.last_name || "");
             setEmail(userData.email || "");
-            setPhoneNumber(userData.phone_number || ""); // Mapped to phone_number
+            setPhoneNumber(userData.phone_number || "");
         }
     }, [makeAuthRequest]);
 
-    // ... loadAddresses and loadOrders (same as original)
     const loadAddresses = useCallback(async () => {
         const data = await makeAuthRequest("/addresses", "GET");
         if (data) {
@@ -89,8 +98,8 @@ function Profile() {
 
         const normalizeItem = (item) => {
             const qty = Number(item.quantity ?? item.qty ?? item.pivot?.quantity ?? 0) || 1;
-            const unitPrice = Number(item.price_at_purchase ?? item.unit_price ?? item.price ?? 0) ||
-                (productsData.find(p => p.id === item.product_id)?.price ?? 0);
+            const unitPrice = Number(item.price_at_purchase ?? item.unit_price ?? item.product?.price ?? 0);
+            
             return {
                 ...item,
                 quantity: qty,
@@ -111,7 +120,6 @@ function Profile() {
         setOrders(normalizedOrders);
     }, [makeAuthRequest]);
 
-
     useEffect(() => {
         const loadData = async () => {
             if (!apiToken) return navigate("/login");
@@ -124,7 +132,6 @@ function Profile() {
         loadData();
     }, [apiToken, navigate, loadUserProfile, loadAddresses, loadOrders]);
 
-    // ... Address Helper functions (addAddress, updateAddress, removeAddress) - same as original
     const addAddress = () => {
         setAddresses([...addresses, { id: null, shippingAddress: "", state: "", zipCode: "" }]);
     };
@@ -148,7 +155,6 @@ function Profile() {
         }
     };
 
-
     const handleSaveChanges = async (e) => {
         e.preventDefault();
 
@@ -160,11 +166,9 @@ function Profile() {
         setIsLoading(true);
         let success = true;
 
-        // Update profile (firstname, lastname, email, phone, password)
         const profilePayload = {
             first_name: firstName,
             last_name: lastName,
-            // Only send if not empty, or send current value
             phone_number: phoneNumber, 
         };
         
@@ -175,7 +179,6 @@ function Profile() {
             if (!profileRes) success = false;
         }
 
-        // Update addresses
         for (const addr of addresses) {
             const payload = {
                 address: addr.shippingAddress,
@@ -197,21 +200,15 @@ function Profile() {
             setNewPassword("");
             setConfirmPassword("");
 
-            if (newPassword || profilePayload.email !== email) { // Simple check, though email state isn't comparing to old email here
-                // Logic kept simple as per request
+            if (newPassword) {
+                alert("Please log in again with your updated credentials.");
+                handleLogout(false); // Forced logout, no confirmation needed
             }
         } else {
             alert("Failed to save changes.");
         }
 
         setIsLoading(false);
-    };
-
-    const handleLogout = (callApi = true) => {
-        if (!window.confirm("Are you sure you want to logout?")) return;
-        if (callApi) makeAuthRequest("/logout", "POST");
-        localStorage.removeItem("apiToken");
-        navigate("/login");
     };
 
     if (isLoading) return <div className={style.profileContainer}>Loading profile data...</div>;
@@ -234,7 +231,6 @@ function Profile() {
                             <label>Email</label>
                             <input type="email" value={email} onChange={(e) => setEmail(e.target.value)} />
                         </div>
-                        {/* Updated to use phoneNumber state */}
                         <div className={style.formGroup}>
                             <label>Phone Number</label>
                             <input type="tel" value={phoneNumber} onChange={(e) => setPhoneNumber(e.target.value)} />
@@ -242,7 +238,6 @@ function Profile() {
                     </div>
 
                     <h2 className={style.sectionTitle}>Change Password</h2>
-                    {/* ... Password fields (same as original) */}
                     <div className={style.formGrid}>
                         <div className={style.formGroup}>
                             <label>New Password</label>
@@ -254,7 +249,6 @@ function Profile() {
                         </div>
                     </div>
 
-                    {/* ... Addresses and Buttons (same as original) */}
                     <h2 className={style.sectionTitle}>Addresses</h2>
                     <table className={style.addressTable}>
                         <thead>
@@ -284,13 +278,12 @@ function Profile() {
 
                     <button type="button" className={style.addAddressButton} onClick={addAddress}>+ Add Another Address</button>
                     <button type="submit" className={style.saveButton}>Save Changes</button>
-                    <button type="button" className={style.logoutButton} onClick={() => handleLogout(true)}>Logout</button>
+                    {/* Logout button removed */}
                 </form>
             </div>
 
             <div className={style.rightColumn}>
-                 {/* ... Order history (same as original) */}
-                 <h2 className={style.sectionTitle}>Order History</h2>
+                <h2 className={style.sectionTitle}>Order History</h2>
                 <div className={style.orderTableWrapper}>
                     <table className={style.orderTable}>
                         <thead>
@@ -310,11 +303,11 @@ function Profile() {
                                         </td>
                                     </tr>
                                     {order.items && order.items.length > 0 ? order.items.map((item, i) => {
-                                        const product = productsData.find(p => p.id === item.product_id);
+                                        const product = item.product;
                                         const brand = product?.brand || item.brand || "Unknown";
                                         const model = product?.model || item.model || "Unknown";
                                         const qty = Number(item.quantity) || 1;
-                                        const unit = Number(item.price_at_purchase) || (product?.price || 0);
+                                        const unit = Number(item.price_at_purchase) || 0;
                                         const total = unit * qty;
                                         return (
                                             <tr key={`${idx}-${i}`}>
@@ -338,5 +331,5 @@ function Profile() {
         </div>
     );
 }
-//robredillo
+
 export default Profile;

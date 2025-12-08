@@ -15,13 +15,13 @@ export default function AdminUsers({ token }) {
         first_name: '',
         last_name: '',
         email: '',
-        phone_number: '', // Added field
+        phone_number: '',
         password: '', 
+        confirmPassword: '', // Added confirm password state
         role: 'customer'
     };
     const [formData, setFormData] = useState(initialFormState);
 
-    // ... useEffect and fetchUsers (same as original)
     useEffect(() => {
         fetchUsers();
     }, [token]);
@@ -45,35 +45,48 @@ export default function AdminUsers({ token }) {
         }
     };
 
-
     const handleChange = (e) => {
         setFormData({ ...formData, [e.target.name]: e.target.value });
     };
 
-    // ... handleSubmit, handleEdit, handleDelete, closeModal (same logic, updated for phone_number implicitly)
     const handleSubmit = async (e) => {
         e.preventDefault();
+
+        // 1. Validation: Check if passwords match
+        if (formData.password !== formData.confirmPassword) {
+            alert("Passwords do not match!");
+            return;
+        }
+
         const config = {
             headers: { 
                 Authorization: `Bearer ${token}`,
                 'Content-Type': 'application/json'
             }
         };
+
         try {
             let response;
+            
             if (isEditing) {
-                const { password, ...updateData } = formData; 
-                const payload = password ? formData : updateData;
+                // For Update: Exclude confirmPassword and empty password
+                const { password, confirmPassword, ...updateData } = formData; 
+                const payload = password ? { ...updateData, password } : updateData;
+                
                 response = await fetch(`${API}/users/${formData.id}`, {
                     method: 'PUT',
                     headers: config.headers,
                     body: JSON.stringify(payload)
                 });
             } else {
+                // For Create: Exclude ID and confirmPassword
+                // IMPORTANT: Removing 'id' prevents the "Integrity constraint violation" error
+                const { id, confirmPassword, ...createData } = formData;
+                
                 response = await fetch(`${API}/users`, {
                     method: 'POST',
                     headers: config.headers,
-                    body: JSON.stringify(formData)
+                    body: JSON.stringify(createData)
                 });
             }
 
@@ -93,8 +106,13 @@ export default function AdminUsers({ token }) {
 
     const handleEdit = (user) => {
         setIsEditing(true);
-        // Ensure phone_number is set, or empty string if null
-        setFormData({ ...user, phone_number: user.phone_number || '', password: '' });
+        // Reset password fields when opening edit modal
+        setFormData({ 
+            ...user, 
+            phone_number: user.phone_number || '', 
+            password: '', 
+            confirmPassword: '' 
+        });
         setIsModalOpen(true);
     };
 
@@ -123,7 +141,6 @@ export default function AdminUsers({ token }) {
         setFormData(initialFormState);
     };
 
-
     return (
         <div className={styles.adminContainer}>
             <div className={styles.adminNav}>
@@ -145,7 +162,7 @@ export default function AdminUsers({ token }) {
                             <th>ID</th>
                             <th>User</th>
                             <th>Role</th>
-                            <th>Phone</th> {/* Added Column */}
+                            <th>Phone</th>
                             <th>Joined</th>
                             <th className={styles.textRight}>Actions</th>
                         </tr>
@@ -175,7 +192,6 @@ export default function AdminUsers({ token }) {
                                             {user.role.toUpperCase()}
                                         </span>
                                     </td>
-                                    {/* Display Phone */}
                                     <td>{user.phone_number || <span className={styles.textMuted}>-</span>}</td>
                                     <td className={styles.textMuted}>
                                         {new Date(user.created_at).toLocaleDateString()}
@@ -217,23 +233,32 @@ export default function AdminUsers({ token }) {
                                 <input type="email" name="email" value={formData.email} onChange={handleChange} required />
                             </div>
 
-                            {/* Added Phone Number Field */}
                             <div className={styles.formGroup}>
                                 <label>Phone Number</label>
                                 <input type="tel" name="phone_number" value={formData.phone_number} onChange={handleChange} required />
                             </div>
 
-                            <div className={styles.formGroup}>
-                                <label>
-                                    Password {isEditing && <span className={`${styles.textMuted} ${styles.small}`}>(Leave blank to keep current)</span>}
-                                </label>
-                                <input 
-                                    type="password" 
-                                    name="password" 
-                                    value={formData.password} 
-                                    onChange={handleChange} 
-                                    required={!isEditing} 
-                                />
+                            <div className={styles.formRow}>
+                                <div className={`${styles.formGroup} ${styles.halfWidth}`}>
+                                    <label>Password {isEditing && <span className={styles.small}>(Optional)</span>}</label>
+                                    <input 
+                                        type="password" 
+                                        name="password" 
+                                        value={formData.password} 
+                                        onChange={handleChange} 
+                                        required={!isEditing} 
+                                    />
+                                </div>
+                                <div className={`${styles.formGroup} ${styles.halfWidth}`}>
+                                    <label>Confirm Password</label>
+                                    <input 
+                                        type="password" 
+                                        name="confirmPassword" 
+                                        value={formData.confirmPassword} 
+                                        onChange={handleChange} 
+                                        required={!isEditing || formData.password.length > 0} 
+                                    />
+                                </div>
                             </div>
 
                             <div className={styles.formGroup}>

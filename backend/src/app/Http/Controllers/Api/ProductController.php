@@ -8,48 +8,44 @@ use Illuminate\Http\Request;
 
 class ProductController extends Controller
 {
-    /**
-     * Display a listing of the resource.
-     */
     public function index()
     {
-        // For the list, we usually just want the product info (stars are already calculated).
-        // We don't load all reviews here to keep it fast.
         return Product::all();
     }
 
-    /**
-     * Store a newly created resource in storage.
-     */
     public function store(Request $request)
     {
-        $product = Product::create($request->all());
+        // 1. Validate the request to ensure safety
+        $validated = $request->validate([
+            'model' => 'required|string|max:255',
+            'brand' => 'required|string|max:255',
+            'price' => 'required|numeric',
+            'stock_quantity' => 'required|integer',
+            'image_link' => 'nullable|string',
+            'description' => 'nullable|string',
+            'category' => 'nullable', // Array or string handling
+            'case_size' => 'nullable|string',
+            'star_review' => 'nullable|numeric'
+        ]);
+
+        // 2. Explicitly create product using validated data
+        // This ignores any 'id' passed in the request body
+        $product = Product::create($validated);
+        
         return response()->json($product, 201);
     }
 
-    /**
-     * Display the specified resource.
-     */
     public function show(Product $product)
     {
-        // --- THIS IS THE FIX ---
-        // Load the 'reviews' relationship, and for each review,
-        // load the 'user' (so we can display the reviewer's name).
         return $product->load('reviews.user');
     }
 
-    /**
-     * Update the specified resource in storage.
-     */
     public function update(Request $request, Product $product)
     {
         $product->update($request->all());
         return response()->json($product);
     }
 
-    /**
-     * Remove the specified resource from storage.
-     */
     public function destroy(Product $product)
     {
         $product->delete();

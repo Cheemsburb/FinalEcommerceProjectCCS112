@@ -51,12 +51,10 @@ export default function AdminProducts({ token }) {
     const handleSubmit = async (e) => {
         e.preventDefault();
         
-        const payload = {
-            ...formData,
-            category: typeof formData.category === 'string' 
-                ? formData.category.split(',').map(cat => cat.trim()).filter(cat => cat !== '')
-                : formData.category
-        };
+        // Prepare categories array
+        const processedCategory = typeof formData.category === 'string' 
+            ? formData.category.split(',').map(cat => cat.trim()).filter(cat => cat !== '')
+            : formData.category;
 
         const config = { 
             headers: { 
@@ -68,12 +66,18 @@ export default function AdminProducts({ token }) {
         try {
             let response;
             if (isEditing) {
+                // Update: Include everything
+                const payload = { ...formData, category: processedCategory };
                 response = await fetch(`${API}/products/${formData.id}`, {
                     method: 'PUT',
                     headers: config.headers,
                     body: JSON.stringify(payload)
                 });
             } else {
+                // Create: Exclude 'id' so backend generates it automatically
+                const { id, ...createData } = formData;
+                const payload = { ...createData, category: processedCategory };
+                
                 response = await fetch(`${API}/products`, {
                     method: 'POST',
                     headers: config.headers,
@@ -154,7 +158,7 @@ export default function AdminProducts({ token }) {
                 <table className={styles.adminTable}>
                     <thead>
                         <tr>
-                            <th>ID (SKU)</th>
+                            <th>ID</th>
                             <th>Details</th>
                             <th>Category</th>
                             <th>Price</th>
@@ -198,7 +202,7 @@ export default function AdminProducts({ token }) {
                                             ))}
                                         </div>
                                     </td>
-                                    <td>${Number(product.price).toLocaleString()}</td>
+                                    <td>₱{Number(product.price).toLocaleString()}</td>
                                     <td>
                                         <span className={`${styles.statusBadge} ${product.stock_quantity > 5 ? styles.statusSuccess : styles.statusDanger}`}>
                                             {product.stock_quantity} Left
@@ -225,18 +229,7 @@ export default function AdminProducts({ token }) {
                         
                         <form onSubmit={handleSubmit} className={styles.adminForm}>
                             <div className={styles.formRow}>
-                                <div className={`${styles.formGroup} ${styles.halfWidth}`}>
-                                    <label>ID (Manual Entry)</label>
-                                    <input
-                                        type="number"
-                                        name="id"
-                                        value={formData.id}
-                                        onChange={handleChange}
-                                        disabled={isEditing}
-                                        placeholder="1001"
-                                        required
-                                    />
-                                </div>
+                                {/* ID Input Removed */}
                                 <div className={`${styles.formGroup} ${styles.halfWidth}`}>
                                     <label>Brand</label>
                                     <select name="brand" value={formData.brand} onChange={handleChange} required>
@@ -248,27 +241,31 @@ export default function AdminProducts({ token }) {
                                         <option value="Casio">Casio</option>
                                     </select>
                                 </div>
-                            </div>
-
-                            <div className={styles.formRow}>
                                 <div className={`${styles.formGroup} ${styles.halfWidth}`}>
                                     <label>Model</label>
                                     <input type="text" name="model" value={formData.model} onChange={handleChange} required />
                                 </div>
+                            </div>
+
+                            <div className={styles.formRow}>
                                 <div className={`${styles.formGroup} ${styles.halfWidth}`}>
                                     <label>Price</label>
                                     <input type="number" step="0.01" name="price" value={formData.price} onChange={handleChange} required />
+                                </div>
+                                <div className={`${styles.formGroup} ${styles.halfWidth}`}>
+                                    <label>Stock Quantity</label>
+                                    <input type="number" name="stock_quantity" value={formData.stock_quantity} onChange={handleChange} required />
                                 </div>
                             </div>
 
                             <div className={styles.formRow}>
                                 <div className={`${styles.formGroup} ${styles.halfWidth}`}>
-                                    <label>Stock Quantity</label>
-                                    <input type="number" name="stock_quantity" value={formData.stock_quantity} onChange={handleChange} required />
-                                </div>
-                                <div className={`${styles.formGroup} ${styles.halfWidth}`}>
                                     <label>Case Size</label>
                                     <input type="text" name="case_size" value={formData.case_size} onChange={handleChange} placeholder="42mm" />
+                                </div>
+                                <div className={`${styles.formGroup} ${styles.halfWidth}`}>
+                                    <label>Image Filename</label>
+                                    <input type="text" name="image_link" value={formData.image_link} onChange={handleChange} placeholder="image-name.png" />
                                 </div>
                             </div>
 
@@ -281,11 +278,6 @@ export default function AdminProducts({ token }) {
                                     onChange={handleChange} 
                                     placeholder="Men's, Sportswear, Formal"
                                 />
-                            </div>
-
-                            <div className={styles.formGroup}>
-                                <label>Image Filename (e.g. rolex-01.png)</label>
-                                <input type="text" name="image_link" value={formData.image_link} onChange={handleChange} placeholder="image-name.png" />
                             </div>
 
                             <div className={styles.formGroup}>

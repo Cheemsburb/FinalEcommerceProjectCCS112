@@ -10,6 +10,8 @@ use Illuminate\Validation\Rule;
 
 class UserController extends Controller
 {
+    // ... show, update, index (keep existing)
+
     public function show(Request $request)
     {
         return $request->user();
@@ -22,7 +24,7 @@ class UserController extends Controller
         $validatedData = $request->validate([
             'first_name' => 'sometimes|string|max:255',
             'last_name' => 'sometimes|string|max:255',
-            'phone_number' => 'sometimes|string|max:20', // Added validation
+            'phone_number' => 'sometimes|string|max:20', 
             'email' => [
                 'sometimes', 
                 'email', 
@@ -45,10 +47,12 @@ class UserController extends Controller
         if ($request->user()->role !== 'admin') {
             return response()->json(['message' => 'Unauthorized'], 403);
         }
-
         return User::all();
     }
 
+    /**
+     * [ADMIN ONLY] Create a new user.
+     */
     public function store(Request $request)
     {
         if ($request->user()->role !== 'admin') {
@@ -59,7 +63,7 @@ class UserController extends Controller
             'first_name' => 'required|string|max:255',
             'last_name' => 'required|string|max:255',
             'email' => 'required|string|email|max:255|unique:users',
-            'phone_number' => 'required|string|max:20', // Added validation
+            'phone_number' => 'required|string|max:20', // Validation added
             'password' => 'required|string|min:8',
             'role' => 'required|in:admin,customer',
         ]);
@@ -68,7 +72,7 @@ class UserController extends Controller
             'first_name' => $validatedData['first_name'],
             'last_name' => $validatedData['last_name'],
             'email' => $validatedData['email'],
-            'phone_number' => $validatedData['phone_number'], // Added field
+            'phone_number' => $validatedData['phone_number'],
             'password' => Hash::make($validatedData['password']),
             'role' => $validatedData['role'],
         ]);
@@ -76,6 +80,9 @@ class UserController extends Controller
         return response()->json($user, 201);
     }
 
+    /**
+     * [ADMIN ONLY] Update a specific user's details.
+     */
     public function updateUser(Request $request, $id)
     {
         if ($request->user()->role !== 'admin') {
@@ -92,7 +99,7 @@ class UserController extends Controller
             'first_name' => 'required|string|max:255',
             'last_name'  => 'required|string|max:255',
             'email'      => 'required|email|unique:users,email,' . $user->id,
-            'phone_number' => 'required|string|max:20', // Added validation
+            'phone_number' => 'required|string|max:20', // Validation added
             'role'       => 'required|in:admin,customer',
             'password'   => 'nullable|string|min:8',
         ]);
@@ -100,7 +107,7 @@ class UserController extends Controller
         $user->first_name = $validatedData['first_name'];
         $user->last_name  = $validatedData['last_name'];
         $user->email      = $validatedData['email'];
-        $user->phone_number = $validatedData['phone_number']; // Added field
+        $user->phone_number = $validatedData['phone_number']; // Update field
         $user->role       = $validatedData['role'];
 
         if (!empty($validatedData['password'])) {
