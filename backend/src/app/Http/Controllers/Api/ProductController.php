@@ -15,7 +15,7 @@ class ProductController extends Controller
 
     public function store(Request $request)
     {
-        // 1. Validate the request to ensure safety
+        // 1. Validate the request
         $validated = $request->validate([
             'model' => 'required|string|max:255',
             'brand' => 'required|string|max:255',
@@ -23,13 +23,21 @@ class ProductController extends Controller
             'stock_quantity' => 'required|integer',
             'image_link' => 'nullable|string',
             'description' => 'nullable|string',
-            'category' => 'nullable', // Array or string handling
+            'category' => 'nullable', 
             'case_size' => 'nullable|string',
             'star_review' => 'nullable|numeric'
         ]);
 
-        // 2. Explicitly create product using validated data
-        // This ignores any 'id' passed in the request body
+        // 2. Generate a unique ID (Fix for "Field 'id' doesn't have a default value")
+        // We generate a random 6-digit ID and ensure it doesn't already exist.
+        do {
+            $uniqueId = random_int(100000, 999999);
+        } while (Product::where('id', $uniqueId)->exists());
+
+        // Assign the generated ID to the data
+        $validated['id'] = $uniqueId;
+
+        // 3. Create product
         $product = Product::create($validated);
         
         return response()->json($product, 201);

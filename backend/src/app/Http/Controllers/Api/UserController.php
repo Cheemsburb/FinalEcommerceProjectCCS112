@@ -10,13 +10,17 @@ use Illuminate\Validation\Rule;
 
 class UserController extends Controller
 {
-    // ... show, update, index (keep existing)
-
+    /**
+     * Show the currently logged-in user.
+     */
     public function show(Request $request)
     {
         return $request->user();
     }
 
+    /**
+     * Update the currently logged-in user's profile.
+     */
     public function update(Request $request)
     {
         $user = $request->user();
@@ -42,6 +46,9 @@ class UserController extends Controller
         return response()->json($user);
     }
 
+    /**
+     * [ADMIN ONLY] List all users.
+     */
     public function index(Request $request)
     {
         if ($request->user()->role !== 'admin') {
@@ -63,7 +70,7 @@ class UserController extends Controller
             'first_name' => 'required|string|max:255',
             'last_name' => 'required|string|max:255',
             'email' => 'required|string|email|max:255|unique:users',
-            'phone_number' => 'required|string|max:20', // Validation added
+            'phone_number' => 'required|string|max:20',
             'password' => 'required|string|min:8',
             'role' => 'required|in:admin,customer',
         ]);
@@ -76,6 +83,11 @@ class UserController extends Controller
             'password' => Hash::make($validatedData['password']),
             'role' => $validatedData['role'],
         ]);
+
+        // FIX: Create a cart for the new customer so they can shop
+        if ($user->role === 'customer') {
+            $user->cart()->create();
+        }
 
         return response()->json($user, 201);
     }
@@ -99,7 +111,7 @@ class UserController extends Controller
             'first_name' => 'required|string|max:255',
             'last_name'  => 'required|string|max:255',
             'email'      => 'required|email|unique:users,email,' . $user->id,
-            'phone_number' => 'required|string|max:20', // Validation added
+            'phone_number' => 'required|string|max:20',
             'role'       => 'required|in:admin,customer',
             'password'   => 'nullable|string|min:8',
         ]);
@@ -107,7 +119,7 @@ class UserController extends Controller
         $user->first_name = $validatedData['first_name'];
         $user->last_name  = $validatedData['last_name'];
         $user->email      = $validatedData['email'];
-        $user->phone_number = $validatedData['phone_number']; // Update field
+        $user->phone_number = $validatedData['phone_number'];
         $user->role       = $validatedData['role'];
 
         if (!empty($validatedData['password'])) {
@@ -119,6 +131,9 @@ class UserController extends Controller
         return response()->json($user);
     }
 
+    /**
+     * [ADMIN ONLY] Delete a user.
+     */
     public function destroy(Request $request, $id)
     {
         if ($request->user()->role !== 'admin') {
