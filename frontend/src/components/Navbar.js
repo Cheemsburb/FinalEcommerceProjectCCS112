@@ -6,7 +6,7 @@ import searchIcon from "../assets/designs/icons/search.png";
 import searchMobile from "../assets/designs/icons/search-mobile.png";
 import dropdownIcon from "../assets/designs/icons/dropdown.png";
 import imageLoader from "../assets/imageLoader";
-import products from "../assets/products.json";
+// Removed: import products from "../assets/products.json";
 import { Link } from "react-router-dom";
 
 const CATEGORIES = ["Men's", "Women's", "Formal", "Sportswear"];
@@ -17,6 +17,10 @@ function Navbar({ onSearchChange, user, signOut }) {
   const [showTopBanner, setShowTopBanner] = useState(!token);
   const [searchQuery, setSearchQuery] = useState("");
   const [searchResults, setSearchResults] = useState([]);
+  
+  // New state to store products fetched from API
+  const [products, setProducts] = useState([]); 
+
   const [openDropdown, setOpenDropdown] = useState(null);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [isMobileSearchOpen, setIsMobileSearchOpen] = useState(false);
@@ -28,6 +32,25 @@ function Navbar({ onSearchChange, user, signOut }) {
     setShowTopBanner(!storedToken);
   }, [user]);
 
+  // Fetch products from API on mount
+  useEffect(() => {
+    const fetchProducts = async () => {
+      try {
+        const response = await fetch("http://localhost:8000/api/products");
+        if (response.ok) {
+          const data = await response.json();
+          setProducts(data);
+        } else {
+          console.error("Failed to fetch products for search bar");
+        }
+      } catch (error) {
+        console.error("Error fetching products:", error);
+      }
+    };
+
+    fetchProducts();
+  }, []);
+
   const closeTopBanner = () => setShowTopBanner(false);
 
   useEffect(() => {
@@ -36,6 +59,7 @@ function Navbar({ onSearchChange, user, signOut }) {
       return;
     }
     const lowerCaseQuery = searchQuery.toLowerCase();
+    // Now filters the 'products' state fetched from API
     const filtered = products.filter(
       (product) =>
         product.model.toLowerCase().includes(lowerCaseQuery) ||
@@ -43,7 +67,7 @@ function Navbar({ onSearchChange, user, signOut }) {
     );
     setSearchResults(filtered.slice(0, 5));
     if (onSearchChange) onSearchChange(searchQuery);
-  }, [searchQuery, onSearchChange]);
+  }, [searchQuery, onSearchChange, products]);
 
   useEffect(() => {
     function handleClickOutside(event) {
