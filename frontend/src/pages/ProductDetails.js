@@ -2,9 +2,9 @@ import React, { useState, useEffect } from "react";
 import { useParams, useNavigate, useLocation } from "react-router-dom";
 import styles from "./styles/ProductDetails.module.css";
 import ReviewCard from "../components/ReviewCard";
+import ProductCard from "../components/ProductCard"; // Import this to show related items
 import images from "../assets/imageLoader";
 
-// Helper for rendering stars
 const renderStars = (rating) => {
   const stars = [];
   const fullStars = Math.floor(rating);
@@ -18,7 +18,6 @@ const renderStars = (rating) => {
   return stars;
 };
 
-// Note: We are now accepting 'currentUser' as a prop
 function ProductDetails({ addToCart, token, currentUser }) {
   const { id } = useParams();
   const navigate = useNavigate();
@@ -26,6 +25,7 @@ function ProductDetails({ addToCart, token, currentUser }) {
 
   // --- State Management ---
   const [product, setProduct] = useState(null);
+  const [relatedProducts, setRelatedProducts] = useState([]); // State for suggestions
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState(null);
   const [selectedSize, setSelectedSize] = useState("42mm");
@@ -37,26 +37,34 @@ function ProductDetails({ addToCart, token, currentUser }) {
   const [newReviewRating, setNewReviewRating] = useState(5);
   const [isSubmittingReview, setIsSubmittingReview] = useState(false);
 
-  // --- LOGIC: Check if user has already reviewed ---
-  // We check the product's review list for a matching user_id
   const userExistingReview = product?.reviews?.find(
     (review) => review.user_id === currentUser?.id
   );
   const hasUserReviewed = !!userExistingReview;
 
   // --- Fetch Logic ---
-  const fetchProduct = async () => {
+  const fetchProductData = async () => {
     setIsLoading(true);
     try {
+      // 1. Fetch current product
       const res = await fetch(`http://localhost:8000/api/products/${id}`);
       if (!res.ok) throw new Error("Product not found");
-      
       const data = await res.json();
       setProduct(data);
-      
-      // Set default size if available in API
       if (data && data.case_size) setSelectedSize(data.case_size);
-      
+
+      // 2. Fetch all products to find "related" ones
+      // Since we don't have a specific 'related' endpoint, we fetch all and slice
+      const allRes = await fetch(`http://localhost:8000/api/products`);
+      if (allRes.ok) {
+        const allData = await allRes.json();
+        // Filter out current product and grab top 4
+        const suggestions = allData
+            .filter(item => item.id !== parseInt(id))
+            .slice(0, 4);
+        setRelatedProducts(suggestions);
+      }
+
     } catch (err) {
       setError(err.message);
     } finally {
@@ -64,9 +72,10 @@ function ProductDetails({ addToCart, token, currentUser }) {
     }
   };
 
-  // Initial Fetch
   useEffect(() => {
-    if (id) fetchProduct();
+    if (id) fetchProductData();
+    // Scroll to top when ID changes (important when clicking related items)
+    window.scrollTo(0, 0);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [id]);
 
@@ -77,9 +86,7 @@ function ProductDetails({ addToCart, token, currentUser }) {
       navigate("/login", { state: { from: location.pathname } });
       return;
     }
-
     if (!product) return;
-
     const success = await addToCart(product, selectedSize);
     if (success) {
       setMessage("Product added to cart!");
@@ -93,9 +100,7 @@ function ProductDetails({ addToCart, token, currentUser }) {
       navigate("/login", { state: { from: location.pathname } });
       return;
     }
-    
     if (!product) return;
-    
     const success = await addToCart(product, selectedSize);
     if (success) navigate("/cart");
   };
@@ -106,26 +111,21 @@ function ProductDetails({ addToCart, token, currentUser }) {
       navigate("/login", { state: { from: location.pathname } });
       return;
     }
-    
-    // Guard clause: Should not happen due to UI hiding, but good for safety
     if (hasUserReviewed) {
       alert("You have already reviewed this product.");
       return;
     }
-
     setShowReviewForm(true);
   };
 
   const handleSubmitReview = async () => {
     if (!token) return;
-
     if (!newReviewDescription.trim()) {
       alert("Please write a description.");
       return;
     }
 
     setIsSubmittingReview(true);
-
     try {
       const response = await fetch(`http://localhost:8000/api/products/${id}/reviews`, {
         method: 'POST',
@@ -144,8 +144,7 @@ function ProductDetails({ addToCart, token, currentUser }) {
         setShowReviewForm(false);
         setNewReviewDescription("");
         setNewReviewRating(5);
-        // Re-fetch to show the new review and update the UI state
-        fetchProduct(); 
+        fetchProductData(); // Re-fetch
       } else {
         const errorData = await response.json();
         alert("Failed to submit review: " + (errorData.message || "Unknown error"));
@@ -161,10 +160,8 @@ function ProductDetails({ addToCart, token, currentUser }) {
   if (isLoading) return <div className={styles.loading}>Loading...</div>;
   if (error || !product) return <div className={styles.loading}>Error: {error || "Product not found"}</div>;
 
-  // Image Fallback Logic
   const imagePath = images[product.image_link] || images[product.image] || product.image_link || product.image || "";
 
-  // Helper to format API date
   const formatDate = (dateString) => {
     if (!dateString) return "";
     return new Date(dateString).toLocaleDateString("en-US", {
@@ -176,7 +173,7 @@ function ProductDetails({ addToCart, token, currentUser }) {
     <div className={styles.detailsPage}>
       {message && <div className={styles.toast}>{message}</div>}
 
-      {/* --- TOP SECTION (Product Info) --- */}
+      {/* --- TOP SECTION --- */}
       <div className={styles.topSection}>
         <div
           className={styles.mainImage}
@@ -217,15 +214,13 @@ function ProductDetails({ addToCart, token, currentUser }) {
         </div>
       </div>
 
-      {/* --- BOTTOM SECTION (Reviews) --- */}
+      {/* --- REVIEWS SECTION --- */}
       <div className={styles.bottomSection}>
         <div className={styles.reviewsContainer}>
           <div className={styles.reviewsHeader}>
             <h2 className={styles.reviewsTitle}>
               Rating & Reviews ({product.reviews ? product.reviews.length : 0})
             </h2>
-            
-            {/* --- CONDITIONAL BUTTON RENDERING --- */}
             {hasUserReviewed ? (
                <span style={{ color: "#666", fontSize: "0.95rem", fontStyle: "italic" }}>
                  You have already reviewed this product.
@@ -237,7 +232,6 @@ function ProductDetails({ addToCart, token, currentUser }) {
             )}
           </div>
 
-          {/* Show Form ONLY if user hasn't reviewed yet */}
           {showReviewForm && !hasUserReviewed && (
             <div className={styles.reviewForm}>
                <h4>Write your review</h4>
@@ -282,7 +276,6 @@ function ProductDetails({ addToCart, token, currentUser }) {
             </div>
           )}
 
-          {/* REVIEW LIST */}
           <div className={styles.reviewsGrid}>
             {product.reviews && product.reviews.length > 0 ? (
               product.reviews.map((review) => (
@@ -300,6 +293,26 @@ function ProductDetails({ addToCart, token, currentUser }) {
           </div>
         </div>
       </div>
+
+      {/* --- YOU MIGHT ALSO LIKE SECTION (Restored) --- */}
+      {relatedProducts.length > 0 && (
+        <div className={styles.relatedSection}>
+            <div className={styles.relatedHeader}>
+                <h2>You Might Also Like</h2>
+            </div>
+            <div className={styles.relatedGrid}>
+                {relatedProducts.map(item => (
+                    <ProductCard 
+                        key={item.id} 
+                        {...item} 
+                        addToCart={addToCart} 
+                        token={token} 
+                    />
+                ))}
+            </div>
+        </div>
+      )}
+      
     </div>
   );
 }
