@@ -10,7 +10,6 @@ class ProductController extends Controller
 {
     public function index()
     {
-        // UPDATED: Eager load reviews and the associated user for each product
         return Product::with('reviews.user')->get();
     }
 
@@ -29,7 +28,7 @@ class ProductController extends Controller
             'star_review' => 'nullable|numeric'
         ]);
 
-        // 2. Generate a unique ID (Fix for "Field 'id' doesn't have a default value")
+        // 2. Generate a unique ID
         do {
             $uniqueId = random_int(100000, 999999);
         } while (Product::where('id', $uniqueId)->exists());
@@ -50,7 +49,20 @@ class ProductController extends Controller
 
     public function update(Request $request, Product $product)
     {
-        $product->update($request->all());
+        // UPDATED: Added validation to filter input and prevent errors
+        $validated = $request->validate([
+            'model' => 'sometimes|string|max:255',
+            'brand' => 'sometimes|string|max:255',
+            'price' => 'sometimes|numeric',
+            'stock_quantity' => 'sometimes|integer',
+            'image_link' => 'nullable|string',
+            'description' => 'nullable|string',
+            'category' => 'nullable', 
+            'case_size' => 'nullable|string',
+            'star_review' => 'nullable|numeric'
+        ]);
+
+        $product->update($validated);
         return response()->json($product);
     }
 

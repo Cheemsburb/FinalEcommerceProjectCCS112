@@ -67,8 +67,19 @@ export default function AdminProducts({ token }) {
         try {
             let response;
             if (isEditing) {
-                // Update: Include everything
-                const payload = { ...formData, category: processedCategory };
+                // Update: Construct specific payload to avoid sending id/timestamps
+                const payload = {
+                    model: formData.model,
+                    brand: formData.brand,
+                    price: formData.price,
+                    stock_quantity: formData.stock_quantity,
+                    image_link: formData.image_link,
+                    description: formData.description,
+                    case_size: formData.case_size,
+                    category: processedCategory,
+                    star_review: formData.star_review 
+                };
+
                 response = await fetch(`${API}/products/${formData.id}`, {
                     method: 'PUT',
                     headers: config.headers,
@@ -227,7 +238,6 @@ export default function AdminProducts({ token }) {
                         
                         <form onSubmit={handleSubmit} className={styles.adminForm}>
                             <div className={styles.formRow}>
-                                {/* ID Input Removed */}
                                 <div className={`${styles.formGroup} ${styles.halfWidth}`}>
                                     <label>Brand</label>
                                     <select name="brand" value={formData.brand} onChange={handleChange} required>
