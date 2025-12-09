@@ -1,25 +1,32 @@
 import React, { useState, useEffect, useCallback } from "react";
 import style from "./styles/Profile.module.css";
 import { useNavigate } from "react-router-dom";
-import productsData from "../assets/products.json";
 
-function Profile() {
+export default function Profile() {
     const navigate = useNavigate();
     const apiToken = localStorage.getItem("apiToken");
 
+    // --- User Profile State ---
     const [firstName, setFirstName] = useState("");
     const [lastName, setLastName] = useState("");
     const [email, setEmail] = useState("");
-    const [phone, setPhone] = useState("");
+    const [phoneNumber, setPhoneNumber] = useState("");
     const [newPassword, setNewPassword] = useState("");
     const [confirmPassword, setConfirmPassword] = useState("");
+    
+    // --- Data State ---
     const [addresses, setAddresses] = useState([]);
     const [orders, setOrders] = useState([]);
     const [isLoading, setIsLoading] = useState(true);
 
+    // --- Modal State for Addresses ---
+    const [isAddressModalOpen, setIsAddressModalOpen] = useState(false);
+    const [editingAddress, setEditingAddress] = useState(null); // null = Add New, Object = Edit
+    const [modalForm, setModalForm] = useState({ address: "", state: "", zip_code: "" });
+
+    // --- HELPER: API REQUEST ---
     const makeAuthRequest = useCallback(async (url, method = "GET", body = null) => {
         if (!apiToken) {
-            alert("Authentication token missing. Redirecting to login.");
             navigate("/login");
             return null;
         }
@@ -37,8 +44,8 @@ function Profile() {
             });
 
             if (response.status === 401 || response.status === 403) {
-                alert("Session expired. Please log in again.");
-                handleLogout(false);
+                localStorage.removeItem("apiToken");
+                navigate("/login");
                 return null;
             }
 
@@ -48,34 +55,28 @@ function Profile() {
             return await response.json();
         } catch (error) {
             console.error("API Error:", error);
-            alert(`API Error: ${error.message}`);
             return null;
         }
     }, [apiToken, navigate]);
 
+    // --- LOAD DATA ---
     const loadUserProfile = useCallback(async () => {
         const userData = await makeAuthRequest("/user", "GET");
         if (userData) {
             setFirstName(userData.first_name || "");
             setLastName(userData.last_name || "");
             setEmail(userData.email || "");
-            setPhone(userData.phone || "");
+            setPhoneNumber(userData.phone_number || "");
         }
     }, [makeAuthRequest]);
 
     const loadAddresses = useCallback(async () => {
         const data = await makeAuthRequest("/addresses", "GET");
-        if (data) {
-            setAddresses(
-                data.map(addr => ({
-                    id: addr.id,
-                    shippingAddress: addr.address,
-                    state: addr.state,
-                    zipCode: addr.zip_code,
-                    is_default: addr.is_default,
-                }))
-            );
-        } else setAddresses([]);
+        if (data && Array.isArray(data)) {
+            setAddresses(data);
+        } else {
+            setAddresses([]);
+        }
     }, [makeAuthRequest]);
 
     const loadOrders = useCallback(async () => {
@@ -86,245 +87,269 @@ function Profile() {
         }
 
         const normalizeItem = (item) => {
-            const qty = Number(item.quantity ?? item.qty ?? item.pivot?.quantity ?? 0) || 1;
-            const unitPrice = Number(item.price_at_purchase ?? item.unit_price ?? item.price ?? 0) ||
-                (productsData.find(p => p.id === item.product_id)?.price ?? 0);
-            return {
-                ...item,
-                quantity: qty,
-                price_at_purchase: unitPrice,
-            };
+            const qty = Number(item.quantity ?? item.pivot?.quantity ?? 1);
+            const unitPrice = Number(item.price_at_purchase ?? item.product?.price ?? 0);
+            return { ...item, quantity: qty, price_at_purchase: unitPrice };
         };
 
         const normalizedOrders = (Array.isArray(data) ? data : []).map(order => {
             const items = Array.isArray(order.items) ? order.items.map(normalizeItem) : [];
-            const orderSubtotal = items.reduce((s, it) => s + (Number(it.price_at_purchase) * Number(it.quantity)), 0);
-            return {
-                ...order,
-                items,
-                order_subtotal: orderSubtotal,
-            };
+            const calculatedTotal = items.reduce((s, it) => s + (it.price_at_purchase * it.quantity), 0);
+            return { ...order, items, order_subtotal: calculatedTotal };
         });
 
         setOrders(normalizedOrders);
     }, [makeAuthRequest]);
 
     useEffect(() => {
-        const loadData = async () => {
-            if (!apiToken) return navigate("/login");
+        if (!apiToken) return navigate("/login");
+        const init = async () => {
             setIsLoading(true);
-            await loadUserProfile();
-            await loadAddresses();
-            await loadOrders();
+            await Promise.all([loadUserProfile(), loadAddresses(), loadOrders()]);
             setIsLoading(false);
         };
-        loadData();
+        init();
     }, [apiToken, navigate, loadUserProfile, loadAddresses, loadOrders]);
 
-    const addAddress = () => {
-        setAddresses([...addresses, { id: null, shippingAddress: "", state: "", zipCode: "" }]);
-    };
-
-    const updateAddress = (index, field, value) => {
-        const updated = [...addresses];
-        updated[index][field] = value;
-        setAddresses(updated);
-    };
-
-    const removeAddress = (index) => {
-        const addr = addresses[index];
-        if (addr.id) {
-            if (window.confirm("Are you sure you want to delete this saved address?")) {
-                makeAuthRequest(`/addresses/${addr.id}`, "DELETE").then(success => {
-                    if (success) setAddresses(addresses.filter((_, i) => i !== index));
-                });
-            }
-        } else {
-            setAddresses(addresses.filter((_, i) => i !== index));
-        }
-    };
-
-    const handleSaveChanges = async (e) => {
+    // --- HANDLERS: USER INFO ---
+    const handleSaveProfile = async (e) => {
         e.preventDefault();
+        if (newPassword && newPassword !== confirmPassword) return alert("Passwords do not match!");
 
-        if (newPassword && newPassword !== confirmPassword) {
-            alert("Passwords do not match!");
-            return;
+        const profilePayload = { first_name: firstName, last_name: lastName, phone_number: phoneNumber };
+        
+        // FIX: Include password_confirmation so Laravel validation passes
+        if (newPassword) {
+            profilePayload.password = newPassword;
+            profilePayload.password_confirmation = confirmPassword; 
         }
-
-        setIsLoading(true);
-        let success = true;
-
-        // Update profile (firstname, lastname, email, phone, password)
-        const profilePayload = {};
-        if (phone) profilePayload.phone = phone;
-        if (newPassword) profilePayload.password = newPassword;
-
-        if (Object.keys(profilePayload).length > 0) {
-            const profileRes = await makeAuthRequest("/user", "PUT", profilePayload);
-            if (!profileRes) success = false;
-        }
-
-        // Update addresses
-        for (const addr of addresses) {
-            const payload = {
-                address: addr.shippingAddress,
-                state: addr.state,
-                zip_code: addr.zipCode,
-            };
-
-            const res = addr.id
-                ? await makeAuthRequest(`/addresses/${addr.id}`, "PUT", payload)
-                : await makeAuthRequest("/addresses", "POST", payload);
-
-            if (!res) success = false;
-        }
-
-        if (success) {
-            alert("Changes saved successfully!");
-            await loadUserProfile();
-            await loadAddresses();
+        
+        const res = await makeAuthRequest("/user", "PUT", profilePayload);
+        if (res) {
+            alert("Profile Info Updated!");
             setNewPassword("");
             setConfirmPassword("");
+        }
+    };
 
-            // If email/password changed, logout to enforce new credentials
-            if (newPassword || profilePayload.email) {
-                alert("Please log in again with your updated credentials.");
-                handleLogout(false);
-            }
+    // --- HANDLERS: ADDRESS ACTIONS ---
+    const handleDeleteAddress = async (id) => {
+        if (!window.confirm("Delete this address?")) return;
+        const success = await makeAuthRequest(`/addresses/${id}`, "DELETE");
+        if (success) loadAddresses();
+    };
+
+    const handleSetDefault = async (id) => {
+        const res = await makeAuthRequest(`/addresses/${id}/set-default`, "PATCH");
+        if (res) loadAddresses();
+    };
+
+    // --- HANDLERS: ADDRESS MODAL ---
+    const openAddModal = () => {
+        setEditingAddress(null);
+        setModalForm({ address: "", state: "", zip_code: "" });
+        setIsAddressModalOpen(true);
+    };
+
+    const openEditModal = (addr) => {
+        setEditingAddress(addr);
+        setModalForm({ address: addr.address, state: addr.state, zip_code: addr.zip_code });
+        setIsAddressModalOpen(true);
+    };
+
+    const handleModalSubmit = async (e) => {
+        e.preventDefault();
+        let res;
+        if (editingAddress) {
+            res = await makeAuthRequest(`/addresses/${editingAddress.id}`, "PUT", modalForm);
         } else {
-            alert("Failed to save changes.");
+            res = await makeAuthRequest("/addresses", "POST", modalForm);
         }
 
-        setIsLoading(false);
+        if (res) {
+            setIsAddressModalOpen(false);
+            loadAddresses();
+        } else {
+            alert("Failed to save address.");
+        }
     };
 
-    const handleLogout = (callApi = true) => {
-        if (!window.confirm("Are you sure you want to logout?")) return;
-        if (callApi) makeAuthRequest("/logout", "POST");
-        localStorage.removeItem("apiToken");
-        navigate("/login");
-    };
-
-    if (isLoading) return <div className={style.profileContainer}>Loading profile data...</div>;
+    if (isLoading) return <div className={style.loadingState}>Loading profile...</div>;
 
     return (
         <div className={style.profileContainer}>
+            {/* LEFT COLUMN */}
             <div className={style.leftColumn}>
-                <form onSubmit={handleSaveChanges}>
-                    <h2 className={style.sectionTitle}>Profile Information</h2>
+                
+                {/* 1. PERSONAL INFO FORM */}
+                <form onSubmit={handleSaveProfile} className={style.cardSection}>
+                    <div className={style.sectionHeader}>
+                        <h2 className={style.sectionTitle}>Personal Information</h2>
+                    </div>
                     <div className={style.formGrid}>
                         <div className={style.formGroup}>
                             <label>First Name</label>
-                            <input type="text" value={firstName} onChange={(e) => setFirstName(e.target.value)} />
+                            <input required type="text" value={firstName} onChange={(e) => setFirstName(e.target.value)} />
                         </div>
                         <div className={style.formGroup}>
                             <label>Last Name</label>
-                            <input type="text" value={lastName} onChange={(e) => setLastName(e.target.value)} />
+                            <input required type="text" value={lastName} onChange={(e) => setLastName(e.target.value)} />
                         </div>
                         <div className={style.formGroup}>
                             <label>Email</label>
-                            <input type="email" value={email} onChange={(e) => setEmail(e.target.value)} />
+                            <input disabled type="email" value={email} className={style.inputDisabled} />
                         </div>
                         <div className={style.formGroup}>
                             <label>Phone</label>
-                            <input type="tel" value={phone} onChange={(e) => setPhone(e.target.value)} />
+                            <input type="tel" value={phoneNumber} onChange={(e) => setPhoneNumber(e.target.value)} />
+                        </div>
+                    </div>
+                    
+                    <div className={style.passwordSection}>
+                        <h3 className={style.subTitle}>Change Password <span className={style.optional}>(Optional)</span></h3>
+                        <div className={style.formGrid}>
+                            <div className={style.formGroup}>
+                                <input placeholder="New Password" type="password" value={newPassword} onChange={(e) => setNewPassword(e.target.value)} />
+                            </div>
+                            <div className={style.formGroup}>
+                                <input placeholder="Confirm Password" type="password" value={confirmPassword} onChange={(e) => setConfirmPassword(e.target.value)} />
+                            </div>
                         </div>
                     </div>
 
-                    <h2 className={style.sectionTitle}>Change Password</h2>
-                    <div className={style.formGrid}>
-                        <div className={style.formGroup}>
-                            <label>New Password</label>
-                            <input type="password" value={newPassword} onChange={(e) => setNewPassword(e.target.value)} />
-                        </div>
-                        <div className={style.formGroup}>
-                            <label>Confirm New Password</label>
-                            <input type="password" value={confirmPassword} onChange={(e) => setConfirmPassword(e.target.value)} />
-                        </div>
-                    </div>
-
-                    <h2 className={style.sectionTitle}>Addresses</h2>
-                    <table className={style.addressTable}>
-                        <thead>
-                            <tr>
-                                <th>Shipping Address</th>
-                                <th>State</th>
-                                <th>Zip Code</th>
-                                <th>Action</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            {addresses.length === 0 && (
-                                <tr>
-                                    <td colSpan="4" className={style.emptyMessage}>No addresses saved.</td>
-                                </tr>
-                            )}
-                            {addresses.map((addr, index) => (
-                                <tr key={addr.id || index}>
-                                    <td><input type="text" value={addr.shippingAddress} onChange={(e) => updateAddress(index, "shippingAddress", e.target.value)} /></td>
-                                    <td><input type="text" value={addr.state} onChange={(e) => updateAddress(index, "state", e.target.value)} /></td>
-                                    <td><input type="text" value={addr.zipCode} onChange={(e) => updateAddress(index, "zipCode", e.target.value)} /></td>
-                                    <td><button type="button" className={style.deleteAddressButton} onClick={() => removeAddress(index)}>Delete</button></td>
-                                </tr>
-                            ))}
-                        </tbody>
-                    </table>
-
-                    <button type="button" className={style.addAddressButton} onClick={addAddress}>+ Add Another Address</button>
-                    <button type="submit" className={style.saveButton}>Save Changes</button>
-                    <button type="button" className={style.logoutButton} onClick={() => handleLogout(true)}>Logout</button>
+                    <button type="submit" className={style.btnPrimary} style={{ marginTop: '20px' }}>Update Profile</button>
                 </form>
-            </div>
 
-            <div className={style.rightColumn}>
-                <h2 className={style.sectionTitle}>Order History</h2>
-                <div className={style.orderTableWrapper}>
-                    <table className={style.orderTable}>
-                        <thead>
-                            <tr>
-                                <th>Brand</th>
-                                <th>Model</th>
-                                <th>Quantity</th>
-                                <th>Total</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            {orders.length > 0 ? orders.map((order, idx) => (
-                                <React.Fragment key={idx}>
-                                    <tr>
-                                        <td colSpan="4" style={{ fontWeight: "700", background: "#f1f1f1", padding: "8px 12px" }}>
-                                            {new Date(order.created_at).toLocaleString()}
-                                        </td>
-                                    </tr>
-                                    {order.items && order.items.length > 0 ? order.items.map((item, i) => {
-                                        const product = productsData.find(p => p.id === item.product_id);
-                                        const brand = product?.brand || item.brand || "Unknown";
-                                        const model = product?.model || item.model || "Unknown";
-                                        const qty = Number(item.quantity) || 1;
-                                        const unit = Number(item.price_at_purchase) || (product?.price || 0);
-                                        const total = unit * qty;
-                                        return (
-                                            <tr key={`${idx}-${i}`}>
-                                                <td>{brand}</td>
-                                                <td>{model}</td>
-                                                <td>{qty}</td>
-                                                <td>₱{total.toLocaleString()}</td>
-                                            </tr>
-                                        );
-                                    }) : (
-                                        <tr><td colSpan="4" className={style.emptyMessage}>No items in this order.</td></tr>
-                                    )}
-                                </React.Fragment>
-                            )) : (
-                                <tr><td colSpan="4" className={style.emptyMessage}>No order history yet.</td></tr>
-                            )}
-                        </tbody>
-                    </table>
+                {/* 2. ADDRESS MANAGEMENT (READ ONLY CARDS) */}
+                <div className={style.cardSection}>
+                    <div className={style.sectionHeader}>
+                        <h2 className={style.sectionTitle}>My Addresses</h2>
+                        <button type="button" className={style.btnAddSmall} onClick={openAddModal}>+ Add New</button>
+                    </div>
+
+                    <div className={style.addressGrid}>
+                        {addresses.length === 0 && <p className={style.emptyText}>No addresses saved yet.</p>}
+                        
+                        {addresses.map((addr) => (
+                            <div key={addr.id} className={`${style.addressCard} ${addr.is_default ? style.defaultCard : ''}`}>
+                                
+                                {/* FIX: Add '!!' before addr.is_default to prevent rendering '0' */}
+                                {!!addr.is_default && <span className={style.defaultBadge}>Default</span>}
+                                
+                                <div className={style.addressContent}>
+                                    <p className={style.addrTextMain}>{addr.address}</p>
+                                    <p className={style.addrTextSub}>{addr.state}, {addr.zip_code}</p>
+                                </div>
+
+                                <div className={style.addressActions}>
+                                    <div className={style.actionLeft}>
+                                        <button onClick={() => openEditModal(addr)} className={style.btnAction}>Edit</button>
+                                        {!addr.is_default && (
+                                            <>
+                                                <span className={style.divider}>|</span>
+                                                <button onClick={() => handleSetDefault(addr.id)} className={style.btnAction}>Set Default</button>
+                                            </>
+                                        )}
+                                    </div>
+                                    <button onClick={() => handleDeleteAddress(addr.id)} className={style.btnDeleteIcon} title="Delete">&times;</button>
+                                </div>
+                            </div>
+                        ))}
+                    </div>
                 </div>
             </div>
+
+            {/* RIGHT COLUMN: ORDERS */}
+            <div className={style.rightColumn}>
+                <h2 className={style.sectionTitle}>Order History</h2>
+                <div className={style.orderList}>
+                    {orders.length === 0 ? (
+                        <div className={style.emptyState}>
+                            <p>No orders placed yet.</p>
+                            <button onClick={() => navigate('/products')} className={style.btnSecondary}>Start Shopping</button>
+                        </div>
+                    ) : (
+                        orders.map((order) => (
+                            <div key={order.id} className={style.orderCard}>
+                                <div className={style.orderHeader}>
+                                    <div>
+                                        <span className={style.orderId}>Order #{order.id}</span>
+                                        <span className={style.orderDate}>{new Date(order.created_at).toLocaleDateString()}</span>
+                                    </div>
+                                    <div className={style.orderMetaRight}>
+                                        <span className={`${style.statusBadge} ${style[order.status] || style.pending}`}>
+                                            {order.status || 'Pending'}
+                                        </span>
+                                        <span className={style.orderTotal}>₱{Number(order.total_amount).toLocaleString()}</span>
+                                    </div>
+                                </div>
+                                <div className={style.orderItems}>
+                                    {order.items.map((item, i) => (
+                                        <div key={i} className={style.orderItem}>
+                                            <div className={style.itemInfo}>
+                                                <span className={style.itemBrand}>{item.product?.brand}</span>
+                                                <span className={style.itemModel}>{item.product?.model}</span>
+                                                <span className={style.itemMeta}>Qty: {item.quantity}</span>
+                                            </div>
+                                            <span className={style.itemPrice}>
+                                                ₱{(Number(item.price_at_purchase) * item.quantity).toLocaleString()}
+                                            </span>
+                                        </div>
+                                    ))}
+                                </div>
+                            </div>
+                        ))
+                    )}
+                </div>
+            </div>
+
+            {/* ADDRESS MODAL */}
+            {isAddressModalOpen && (
+                <div className={style.modalOverlay}>
+                    <div className={style.modalContent}>
+                        <div className={style.modalHeader}>
+                            <h3>{editingAddress ? 'Edit Address' : 'Add New Address'}</h3>
+                            <button className={style.closeBtn} onClick={() => setIsAddressModalOpen(false)}>&times;</button>
+                        </div>
+                        <form onSubmit={handleModalSubmit}>
+                            <div className={style.formGroup}>
+                                <label>Street Address</label>
+                                <input 
+                                    required 
+                                    type="text" 
+                                    value={modalForm.address} 
+                                    onChange={(e) => setModalForm({...modalForm, address: e.target.value})} 
+                                    placeholder="123 Main St"
+                                />
+                            </div>
+                            <div className={style.formGrid}>
+                                <div className={style.formGroup}>
+                                    <label>State / City</label>
+                                    <input 
+                                        required 
+                                        type="text" 
+                                        value={modalForm.state} 
+                                        onChange={(e) => setModalForm({...modalForm, state: e.target.value})} 
+                                    />
+                                </div>
+                                <div className={style.formGroup}>
+                                    <label>Zip Code</label>
+                                    <input 
+                                        required 
+                                        type="text" 
+                                        value={modalForm.zip_code} 
+                                        onChange={(e) => setModalForm({...modalForm, zip_code: e.target.value})} 
+                                    />
+                                </div>
+                            </div>
+                            <div className={style.modalActions}>
+                                <button type="button" onClick={() => setIsAddressModalOpen(false)} className={style.btnSecondary}>Cancel</button>
+                                <button type="submit" className={style.btnPrimary}>{editingAddress ? 'Save Changes' : 'Add Address'}</button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            )}
         </div>
     );
 }
-//robredillo
-export default Profile;

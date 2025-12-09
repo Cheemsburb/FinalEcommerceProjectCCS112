@@ -8,48 +8,64 @@ use Illuminate\Http\Request;
 
 class ProductController extends Controller
 {
-    /**
-     * Display a listing of the resource.
-     */
     public function index()
     {
-        // For the list, we usually just want the product info (stars are already calculated).
-        // We don't load all reviews here to keep it fast.
-        return Product::all();
+        return Product::with('reviews.user')->get();
     }
 
-    /**
-     * Store a newly created resource in storage.
-     */
     public function store(Request $request)
     {
-        $product = Product::create($request->all());
+        // 1. Validate the request
+        $validated = $request->validate([
+            'model' => 'required|string|max:255',
+            'brand' => 'required|string|max:255',
+            'price' => 'required|numeric',
+            'stock_quantity' => 'required|integer',
+            'image_link' => 'nullable|string',
+            'description' => 'nullable|string',
+            'category' => 'nullable', 
+            'case_size' => 'nullable|string',
+            'star_review' => 'nullable|numeric'
+        ]);
+
+        // 2. Generate a unique ID
+        do {
+            $uniqueId = random_int(100000, 999999);
+        } while (Product::where('id', $uniqueId)->exists());
+
+        // Assign the generated ID
+        $validated['id'] = $uniqueId;
+
+        // 3. Create product
+        $product = Product::create($validated);
+        
         return response()->json($product, 201);
     }
 
-    /**
-     * Display the specified resource.
-     */
     public function show(Product $product)
     {
-        // --- THIS IS THE FIX ---
-        // Load the 'reviews' relationship, and for each review,
-        // load the 'user' (so we can display the reviewer's name).
         return $product->load('reviews.user');
     }
 
-    /**
-     * Update the specified resource in storage.
-     */
     public function update(Request $request, Product $product)
     {
-        $product->update($request->all());
+        // UPDATED: Added validation to filter input and prevent errors
+        $validated = $request->validate([
+            'model' => 'sometimes|string|max:255',
+            'brand' => 'sometimes|string|max:255',
+            'price' => 'sometimes|numeric',
+            'stock_quantity' => 'sometimes|integer',
+            'image_link' => 'nullable|string',
+            'description' => 'nullable|string',
+            'category' => 'nullable', 
+            'case_size' => 'nullable|string',
+            'star_review' => 'nullable|numeric'
+        ]);
+
+        $product->update($validated);
         return response()->json($product);
     }
 
-    /**
-     * Remove the specified resource from storage.
-     */
     public function destroy(Product $product)
     {
         $product->delete();

@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import styles from './styles/Admin.module.css';
+import AdminNav from '../components/AdminNav';
 
 const API = "http://localhost:8000/api";
 
@@ -15,7 +16,9 @@ export default function AdminUsers({ token }) {
         first_name: '',
         last_name: '',
         email: '',
+        phone_number: '',
         password: '', 
+        confirmPassword: '', // Added confirm password state
         role: 'customer'
     };
     const [formData, setFormData] = useState(initialFormState);
@@ -27,8 +30,13 @@ export default function AdminUsers({ token }) {
     const fetchUsers = async () => {
         try {
             setLoading(true);
-            const response = await fetch(`${API}/users`, {
-                headers: { Authorization: `Bearer ${token}` }
+            // ADDED: ?t=${Date.now()} forces the browser to get fresh data
+            const response = await fetch(`${API}/users?t=${Date.now()}`, {
+                headers: { 
+                    Authorization: `Bearer ${token}`,
+                    'Cache-Control': 'no-cache',
+                    'Pragma': 'no-cache'
+                }
             }); 
             if (response.ok) {
                 const data = await response.json();
@@ -49,27 +57,56 @@ export default function AdminUsers({ token }) {
 
     const handleSubmit = async (e) => {
         e.preventDefault();
+
+        // 1. Validation: Check if passwords match
+        if (formData.password !== formData.confirmPassword) {
+            alert("Passwords do not match!");
+            return;
+        }
+
+        // Headers: We add 'Accept' to prevent the "Route [login]" crash if something else fails
         const config = {
             headers: { 
                 Authorization: `Bearer ${token}`,
-                'Content-Type': 'application/json'
+                'Content-Type': 'application/json',
+                'Accept': 'application/json' 
             }
         };
+
         try {
             let response;
+            
             if (isEditing) {
-                const { password, ...updateData } = formData; 
-                const payload = password ? formData : updateData;
+                // ... (Keep existing Edit logic as is) ...
+                const { password, confirmPassword, ...updateData } = formData; 
+                const payload = password ? { ...updateData, password } : updateData;
+                
                 response = await fetch(`${API}/users/${formData.id}`, {
                     method: 'PUT',
                     headers: config.headers,
                     body: JSON.stringify(payload)
                 });
             } else {
-                response = await fetch(`${API}/users`, {
+                // === CHANGED SECTION: USE REGISTER ROUTE ===
+                
+                // Prepare payload for /register
+                // 1. Rename 'confirmPassword' to 'password_confirmation' (Required by Laravel)
+                // 2. Include 'role' so you can create Admins
+                const registerPayload = {
+                    first_name: formData.first_name,
+                    last_name: formData.last_name,
+                    email: formData.email,
+                    phone_number: formData.phone_number,
+                    password: formData.password,
+                    password_confirmation: formData.confirmPassword, // Map this field
+                    role: formData.role
+                };
+                
+                // Point to /register instead of /users
+                response = await fetch(`${API}/register`, {
                     method: 'POST',
                     headers: config.headers,
-                    body: JSON.stringify(formData)
+                    body: JSON.stringify(registerPayload)
                 });
             }
 
@@ -79,7 +116,9 @@ export default function AdminUsers({ token }) {
                 fetchUsers();
             } else {
                 const errorData = await response.json();
-                alert("Failed to save user. " + (errorData.message || ""));
+                // Improved error message handling
+                const msg = errorData.message || JSON.stringify(errorData.errors) || "Unknown error";
+                alert("Failed to save user: " + msg);
             }
         } catch (error) {
             console.error("Error saving user", error);
@@ -89,7 +128,13 @@ export default function AdminUsers({ token }) {
 
     const handleEdit = (user) => {
         setIsEditing(true);
-        setFormData({ ...user, password: '' });
+        // Reset password fields when opening edit modal
+        setFormData({ 
+            ...user, 
+            phone_number: user.phone_number || '', 
+            password: '', 
+            confirmPassword: '' 
+        });
         setIsModalOpen(true);
     };
 
@@ -120,10 +165,7 @@ export default function AdminUsers({ token }) {
 
     return (
         <div className={styles.adminContainer}>
-            <div className={styles.adminNav}>
-                <Link to="/admin/products" className={styles.adminNavLink}>Products</Link>
-                <Link to="/admin/users" className={`${styles.adminNavLink} ${styles.activeLink}`}>Users</Link>
-            </div>
+            <AdminNav />
 
             <header className={styles.adminHeader}>
                 <h1>User Management</h1>
@@ -139,15 +181,16 @@ export default function AdminUsers({ token }) {
                             <th>ID</th>
                             <th>User</th>
                             <th>Role</th>
+                            <th>Phone</th>
                             <th>Joined</th>
                             <th className={styles.textRight}>Actions</th>
                         </tr>
                     </thead>
                     <tbody>
                         {loading ? (
-                            <tr><td colSpan="5" className={styles.textCenter}>Loading users...</td></tr>
+                            <tr><td colSpan="6" className={styles.textCenter}>Loading users...</td></tr>
                         ) : users.length === 0 ? (
-                            <tr><td colSpan="5" className={styles.textCenter}>No users found.</td></tr>
+                            <tr><td colSpan="6" className={styles.textCenter}>No users found.</td></tr>
                         ) : (
                             users.map((user) => (
                                 <tr key={user.id}>
@@ -168,6 +211,7 @@ export default function AdminUsers({ token }) {
                                             {user.role.toUpperCase()}
                                         </span>
                                     </td>
+                                    <td>{user.phone_number || <span className={styles.textMuted}>-</span>}</td>
                                     <td className={styles.textMuted}>
                                         {new Date(user.created_at).toLocaleDateString()}
                                     </td>
@@ -209,16 +253,31 @@ export default function AdminUsers({ token }) {
                             </div>
 
                             <div className={styles.formGroup}>
-                                <label>
-                                    Password {isEditing && <span className={`${styles.textMuted} ${styles.small}`}>(Leave blank to keep current)</span>}
-                                </label>
-                                <input 
-                                    type="password" 
-                                    name="password" 
-                                    value={formData.password} 
-                                    onChange={handleChange} 
-                                    required={!isEditing} 
-                                />
+                                <label>Phone Number</label>
+                                <input type="tel" name="phone_number" value={formData.phone_number} onChange={handleChange} required />
+                            </div>
+
+                            <div className={styles.formRow}>
+                                <div className={`${styles.formGroup} ${styles.halfWidth}`}>
+                                    <label>Password {isEditing && <span className={styles.small}>(Optional)</span>}</label>
+                                    <input 
+                                        type="password" 
+                                        name="password" 
+                                        value={formData.password} 
+                                        onChange={handleChange} 
+                                        required={!isEditing} 
+                                    />
+                                </div>
+                                <div className={`${styles.formGroup} ${styles.halfWidth}`}>
+                                    <label>Confirm Password</label>
+                                    <input 
+                                        type="password" 
+                                        name="confirmPassword" 
+                                        value={formData.confirmPassword} 
+                                        onChange={handleChange} 
+                                        required={!isEditing || formData.password.length > 0} 
+                                    />
+                                </div>
                             </div>
 
                             <div className={styles.formGroup}>

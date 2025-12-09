@@ -21,11 +21,13 @@ const EyeClosedIcon = () => (
   </svg>
 );
 
-function Register() {
+// Added { signIn } prop to allow updating global auth state
+function Register({ signIn }) {
   const navigate = useNavigate();
   const [firstName, setFirstName] = useState('');
   const [lastName, setLastName] = useState('');
   const [email, setEmail] = useState('');
+  const [phoneNumber, setPhoneNumber] = useState('');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [agreeToTerms, setAgreeToTerms] = useState(false);
@@ -73,6 +75,7 @@ function Register() {
       first_name: firstName,
       last_name: lastName,
       email: email,
+      phone_number: phoneNumber,
       password: password,
       password_confirmation: confirmPassword
     };
@@ -87,14 +90,24 @@ function Register() {
       const data = await response.json();
 
       if (response.ok && response.status === 201) {
-        setSuccess("Account created successfully! Redirecting...");
+        setSuccess("Account created successfully! Logging you in...");
+
+        // --- FIX START: Match Login.js Storage Keys ---
         localStorage.setItem("userLoggedIn", "true");
         localStorage.setItem("currentUserEmail", data.user.email);
-        localStorage.setItem("apiToken", data.token);
+        localStorage.setItem("apiToken", data.token); // Store the token exactly as Login.js does
+        
+        // If your App.js passes a signIn function to update state, call it here
+        if (signIn) {
+            signIn(data.token, data.user);
+        }
+        // --- FIX END ---
+        
         setPassword('');
         setConfirmPassword('');
         setFirstName('');
         setLastName('');
+        setPhoneNumber('');
         setTimeout(() => navigate("/"), 2000);
       } else {
         let errorMessage = 'Registration failed. Please check your details.';
@@ -131,10 +144,17 @@ function Register() {
                 <label htmlFor="lastName">Last Name</label>
                 <input type="text" id="lastName" value={lastName} onChange={e => setLastName(e.target.value)} required placeholder="Joe" />
               </div>
+
+              <div className={style.formGroup}>
+                <label htmlFor="phoneNumber">Phone Number</label>
+                <input type="tel" id="phoneNumber" value={phoneNumber} onChange={e => setPhoneNumber(e.target.value)} required placeholder="09123456789" />
+              </div>
+
               <div className={style.formGroup}>
                 <label htmlFor="email">Email</label>
                 <input type="email" id="email" value={email} onChange={e => setEmail(e.target.value)} required placeholder="michael.joe@example.com" />
               </div>
+
               <div className={style.formGroup}>
                 <label htmlFor="password">Password</label>
                 <div className={style.passwordWrapper}>

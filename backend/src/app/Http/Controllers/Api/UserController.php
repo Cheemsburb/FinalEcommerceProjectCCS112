@@ -11,7 +11,7 @@ use Illuminate\Validation\Rule;
 class UserController extends Controller
 {
     /**
-     * Display the authenticated user's details.
+     * Show the currently logged-in user.
      */
     public function show(Request $request)
     {
@@ -19,7 +19,7 @@ class UserController extends Controller
     }
 
     /**
-     * Update the authenticated user's profile.
+     * Update the currently logged-in user's profile.
      */
     public function update(Request $request)
     {
@@ -28,10 +28,11 @@ class UserController extends Controller
         $validatedData = $request->validate([
             'first_name' => 'sometimes|string|max:255',
             'last_name' => 'sometimes|string|max:255',
+            'phone_number' => 'sometimes|string|max:20', 
             'email' => [
                 'sometimes', 
                 'email', 
-                Rule::unique('users')->ignore($user->id), // Allow them to keep their current email
+                Rule::unique('users')->ignore($user->id),
             ],
             'password' => 'sometimes|string|min:8|confirmed',
         ]);
@@ -46,15 +47,13 @@ class UserController extends Controller
     }
 
     /**
-     * [ADMIN ONLY] Display a listing of all users.
+     * [ADMIN ONLY] List all users.
      */
     public function index(Request $request)
     {
-        // Check if the requester is an admin
         if ($request->user()->role !== 'admin') {
             return response()->json(['message' => 'Unauthorized'], 403);
         }
-
         return User::all();
     }
 
@@ -63,30 +62,41 @@ class UserController extends Controller
      */
     public function store(Request $request)
     {
-        // Check if the requester is an admin
+        // 1. Log that we reached this method
+        \Illuminate\Support\Facades\Log::info('Admin attempting to create user', $request->all());
+
         if ($request->user()->role !== 'admin') {
             return response()->json(['message' => 'Unauthorized'], 403);
         }
 
-        // Validate the incoming data
         $validatedData = $request->validate([
             'first_name' => 'required|string|max:255',
             'last_name' => 'required|string|max:255',
             'email' => 'required|string|email|max:255|unique:users',
+            'phone_number' => 'required|string|max:20',
             'password' => 'required|string|min:8',
-            'role' => 'required|in:admin,customer', // Ensure role is valid
+            'role' => 'required|in:admin,customer',
         ]);
 
-        // Create the user
+        // 2. Log the validated data
+        \Illuminate\Support\Facades\Log::info('Validation passed', $validatedData);
+
         $user = User::create([
             'first_name' => $validatedData['first_name'],
             'last_name' => $validatedData['last_name'],
             'email' => $validatedData['email'],
-            'password' => Hash::make($validatedData['password']), // Hash the password
+            'phone_number' => $validatedData['phone_number'],
+            'password' => Hash::make($validatedData['password']),
             'role' => $validatedData['role'],
         ]);
 
-        // Return the new user
+        // 3. Log the created user ID
+        \Illuminate\Support\Facades\Log::info('User created with ID: ' . $user->id);
+
+        if ($user->role === 'customer') {
+            $user->cart()->create();
+        }
+
         return response()->json($user, 201);
     }
 
@@ -95,7 +105,6 @@ class UserController extends Controller
      */
     public function updateUser(Request $request, $id)
     {
-        // Check if requester is admin
         if ($request->user()->role !== 'admin') {
             return response()->json(['message' => 'Unauthorized'], 403);
         }
@@ -106,23 +115,21 @@ class UserController extends Controller
             return response()->json(['message' => 'User not found'], 404);
         }
 
-        // Validate input
         $validatedData = $request->validate([
             'first_name' => 'required|string|max:255',
             'last_name'  => 'required|string|max:255',
-            // Unique check ignores the current user's ID
-            'email'      => 'required|email|unique:users,email,' . $user->id, 
+            'email'      => 'required|email|unique:users,email,' . $user->id,
+            'phone_number' => 'required|string|max:20',
             'role'       => 'required|in:admin,customer',
-            'password'   => 'nullable|string|min:8', // Password is optional
+            'password'   => 'nullable|string|min:8',
         ]);
 
-        // Update fields
         $user->first_name = $validatedData['first_name'];
         $user->last_name  = $validatedData['last_name'];
         $user->email      = $validatedData['email'];
+        $user->phone_number = $validatedData['phone_number'];
         $user->role       = $validatedData['role'];
 
-        // Only hash and update password if a new one was provided
         if (!empty($validatedData['password'])) {
             $user->password = Hash::make($validatedData['password']);
         }
@@ -133,11 +140,10 @@ class UserController extends Controller
     }
 
     /**
-     * [ADMIN ONLY] Delete a specific user.
+     * [ADMIN ONLY] Delete a user.
      */
     public function destroy(Request $request, $id)
     {
-        // Check if the requester is an admin
         if ($request->user()->role !== 'admin') {
             return response()->json(['message' => 'Unauthorized'], 403);
         }
@@ -148,7 +154,6 @@ class UserController extends Controller
             return response()->json(['message' => 'User not found'], 404);
         }
 
-        // Prevent admin from deleting themselves
         if ($userToDelete->id === $request->user()->id) {
             return response()->json(['message' => 'You cannot delete your own account via this endpoint.'], 400);
         }

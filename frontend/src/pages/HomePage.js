@@ -10,9 +10,6 @@ import style from "./styles/HomePage.module.css";
 import ProductCard from "../components/ProductCard";
 import ReviewCard from "../components/ReviewCard";
 
-// JSON Data
-import productsData from "../assets/products.json"; // fallback if not using API
-
 // Images
 import heroNew from "../assets/designs/hero-page-bg-removebg-preview.png";
 import mens from "../assets/designs/person-01.jpg";
@@ -34,79 +31,64 @@ import richardLabel from "../assets/designs/label/richard-mille-label.png";
 import rolexLabel from "../assets/designs/label/rolex-label.png";
 import seikoLabel from "../assets/designs/label/seiko-label.png";
 
-// Sample reviews
-const sampleReviews = [
-  { id: 1, name: "Correllene I.", rating: 5, comment: "Absolutely in love with my new watch! The quality is outstanding and it looks even better in person. 10/10!", date: "October 1, 2025" },
-  { id: 2, name: "Josua R.", rating: 4, comment: "Great customer service and fast shipping. The watch is beautiful, though a bit heavier than I expected. Still a fantastic piece.", date: "October 3, 2025" },
-  { id: 3, name: "Ira S.", rating: 5, comment: "This was a gift for my husband and he was thrilled. The craftsmanship is impeccable. Will definitely be shopping here again.", date: "October 2, 2025" },
-  { id: 4, name: "Aljake R.", rating: 5, comment: "From the unboxing experience to wearing it daily, everything about this watch is premium. Worth every penny.", date: "October 4, 2025" },
-  { id: 5, name: "Benedic S.", rating: 5, comment: "I've been a watch collector for years, and this piece is a stunning addition. The detail on the dial is incredible.", date: "October 5, 2025" },
-  { id: 6, name: "Gladwyn S.", rating: 4, comment: "A truly reliable and stylish timepiece. It's become my go-to for both formal events and casual outings.", date: "October 6, 2025" }
-];
-
 // API URL
 const API = "http://localhost:8000/api";
 
-function HomePage() {
-  const [token, setToken] = useState(localStorage.getItem("authToken"));
-  const [isValidToken, setIsValidToken] = useState(false);
+function HomePage({ addToCart, token }) {
   const [products, setProducts] = useState([]);
+  const [reviews, setReviews] = useState([]); // State for reviews
   const [loading, setLoading] = useState(true);
   const [showAllBrands, setShowAllBrands] = useState(false);
-  const [showTopBanner, setShowTopBanner] = useState(!token);
   const carouselRef = useRef(null);
 
-  // Verify token validity
-  useEffect(() => {
-    const verifyToken = async () => {
-      if (!token) {
-        setIsValidToken(false);
-        setShowTopBanner(true);
-        return;
-      }
-      try {
-        const res = await fetch(`${API}/verify-token`, {
-          headers: { Authorization: `Bearer ${token}` },
-        });
-        if (res.ok) {
-          setIsValidToken(true);
-          setShowTopBanner(false);
-        } else {
-          localStorage.removeItem("authToken");
-          setIsValidToken(false);
-          setShowTopBanner(true);
-        }
-      } catch (err) {
-        console.error("Token verification failed:", err);
-        localStorage.removeItem("authToken");
-        setIsValidToken(false);
-        setShowTopBanner(true);
-      }
-    };
-
-    verifyToken();
-  }, [token]);
-
-  // Fetch products from API or fallback to JSON
+  // Fetch products (and reviews) from API
   useEffect(() => {
     const fetchProducts = async () => {
       try {
-        const res = await fetch(`${API}/products`, {
-          headers: isValidToken ? { Authorization: `Bearer ${token}` } : {},
-        });
+        const headers = token ? { Authorization: `Bearer ${token}` } : {};
+        const res = await fetch(`${API}/products`, { headers });
+        
         if (!res.ok) throw new Error(`HTTP error! status: ${res.status}`);
         const data = await res.json();
         setProducts(data);
+
+        // --- EXTRACT RANDOM REVIEWS FROM PRODUCTS ---
+        const allReviews = [];
+        if (data && Array.isArray(data)) {
+          data.forEach(product => {
+            if (product.reviews && Array.isArray(product.reviews)) {
+              product.reviews.forEach(review => {
+                // Ensure the review has a user attached before adding
+                if (review.user) {
+                  allReviews.push({
+                    id: review.id,
+                    name: `${review.user.first_name} ${review.user.last_name}`,
+                    rating: review.rating,
+                    comment: review.description, // Map 'description' to 'comment' for ReviewCard
+                    date: new Date(review.created_at).toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })
+                  });
+                }
+              });
+            }
+          });
+        }
+
+        // Shuffle and pick up to 6 random reviews
+        const shuffledReviews = allReviews.sort(() => 0.5 - Math.random());
+        setReviews(shuffledReviews.slice(0, 6));
+        // --------------------------------------------
+
       } catch (err) {
-        console.error("Error loading products:", err);
-        setProducts(productsData); // fallback
+        console.error("Error loading products/reviews from API:", err);
+        setProducts([]);
+        setReviews([]);
       } finally {
         setLoading(false);
       }
     };
 
     fetchProducts();
-  }, [isValidToken, token]);
+  }, [token]);
 
   // Pre-filter product sets
   const rolexProducts = products.filter(p => p.brand === "Rolex").slice(0, 4);
@@ -126,13 +108,6 @@ function HomePage() {
     }
   };
 
-  const handleLogout = () => {
-    localStorage.removeItem("authToken");
-    setToken(null);
-    setIsValidToken(false);
-    setShowTopBanner(true);
-  };
-
   return (
     <main>
 
@@ -144,11 +119,6 @@ function HomePage() {
           <Link to="/products">
             <button className={style.heroButton}>Go Shopping</button>
           </Link>
-          {isValidToken && (
-            <button onClick={handleLogout} className={style.logoutButton}>
-              Logout
-            </button>
-          )}
         </div>
         <div className={style.heroImageContainer}>
           <img src={heroNew} alt="Models wearing watches" className={style.heroImage} />
@@ -178,9 +148,13 @@ function HomePage() {
               <img src={section.label} alt={section.brand} className={style.sectionLabel} />
               <hr className={style.divider} />
               <div className={style.productGrid}>
-                {section.products.map(product => (
-                  <ProductCard key={product.id} {...product} />
-                ))}
+                {section.products.length > 0 ? (
+                  section.products.map(product => (
+                    <ProductCard key={product.id} {...product} addToCart={addToCart} token={token} />
+                  ))
+                ) : (
+                  <p className={style.noProducts}>No products found for {section.brand}.</p>
+                )}
               </div>
               <Link to={`/products?brand=${encodeURIComponent(section.brand)}`} className={style.viewAllButton}>
                 View All
@@ -223,7 +197,7 @@ function HomePage() {
         </div>
       </section>
 
-      {/* Customer Reviews */}
+      {/* Customer Reviews (Dynamic) */}
       <section className={style.reviewSection}>
         <div className={style.container}>
           <div className={style.reviewHeader}>
@@ -241,10 +215,15 @@ function HomePage() {
               </button>
             </div>
           </div>
+          
           <div className={style.reviewCarousel} ref={carouselRef}>
-            {sampleReviews.map(review => (
-              <ReviewCard key={review.id} {...review} />
-            ))}
+            {reviews.length > 0 ? (
+              reviews.map(review => (
+                <ReviewCard key={review.id} {...review} />
+              ))
+            ) : (
+              <p style={{ textAlign: 'center', width: '100%', color: '#666' }}>No reviews yet. Be the first to review!</p>
+            )}
           </div>
         </div>
       </section>

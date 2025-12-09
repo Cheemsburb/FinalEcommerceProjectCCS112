@@ -1,24 +1,15 @@
 <?php
 
 use Illuminate\Support\Facades\Route;
-use App\Http\Controllers\Api\AuthController;       // <-- Add \Api
-use App\Http\Controllers\Api\ProductController;   // <-- Add \Api
-use App\Http\Controllers\Api\UserController;      // <-- Add \Api
-use App\Http\Controllers\Api\CartController;      // <-- Add \Api
-use App\Http\Controllers\Api\OrderController;     // <-- Add \Api
-use App\Http\Controllers\Api\ReviewController;    // <-- Add \Api
+use App\Http\Controllers\Api\AuthController;       
+use App\Http\Controllers\Api\ProductController;   
+use App\Http\Controllers\Api\UserController;      
+use App\Http\Controllers\Api\CartController;     
+use App\Http\Controllers\Api\OrderController;     
+use App\Http\Controllers\Api\ReviewController;    
 use App\Http\Controllers\Api\AddressController;
+use App\Http\Controllers\Api\AdminController;
 
-// ... (rest of your routes)
-
-/*
-|--------------------------------------------------------------------------
-| API Routes
-|--------------------------------------------------------------------------
-|
-| These routes are for your API. They are all prefixed with '/api' by default.
-|
-*/
 
 // ===============================================
 // === PUBLIC ROUTES (No login needed) ===
@@ -47,6 +38,12 @@ Route::middleware('auth:sanctum')->group(function () {
     // Get the currently logged-in user's details
     Route::get('/user', [UserController::class, 'show']);
     // (You'll add routes for managing user addresses here later)
+    Route::put('/user', [UserController::class, 'update']);
+
+    // === ADMIN ROUTES ===
+    Route::get('/admin/stats', [AdminController::class, 'stats']);
+    Route::get('/admin/orders', [OrderController::class, 'adminIndex']);
+    Route::patch('/admin/orders/{order}/status', [OrderController::class, 'updateStatus']);
 
     // --- Cart ---
     // Manages the user's personal shopping cart

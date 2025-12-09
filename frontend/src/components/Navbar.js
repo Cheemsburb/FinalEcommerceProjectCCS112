@@ -6,8 +6,9 @@ import searchIcon from "../assets/designs/icons/search.png";
 import searchMobile from "../assets/designs/icons/search-mobile.png";
 import dropdownIcon from "../assets/designs/icons/dropdown.png";
 import imageLoader from "../assets/imageLoader";
-import products from "../assets/products.json";
-import { Link } from "react-router-dom";
+// Removed: import products from "../assets/products.json";
+import { Link, useNavigate } from "react-router-dom"; // <--- Added useNavigate
+import LoginRedirectModal from "./LoginRedirectModal"; // <--- Added Import
 
 const CATEGORIES = ["Men's", "Women's", "Formal", "Sportswear"];
 const BRANDS = ["Rolex", "Omega", "Seiko", "Richard Mille", "Casio"];
@@ -17,16 +18,42 @@ function Navbar({ onSearchChange, user, signOut }) {
   const [showTopBanner, setShowTopBanner] = useState(!token);
   const [searchQuery, setSearchQuery] = useState("");
   const [searchResults, setSearchResults] = useState([]);
+  
+  const [products, setProducts] = useState([]); 
+
   const [openDropdown, setOpenDropdown] = useState(null);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [isMobileSearchOpen, setIsMobileSearchOpen] = useState(false);
+  
+  // NEW STATE FOR LOGIN MODAL
+  const [isLoginModalOpen, setIsLoginModalOpen] = useState(false);
+  
   const searchContainerRef = useRef(null);
+  const navigate = useNavigate(); // <--- Init hook
 
   useEffect(() => {
     const storedToken = localStorage.getItem("authToken");
     setToken(storedToken);
     setShowTopBanner(!storedToken);
   }, [user]);
+
+  useEffect(() => {
+    const fetchProducts = async () => {
+      try {
+        const response = await fetch("http://localhost:8000/api/products");
+        if (response.ok) {
+          const data = await response.json();
+          setProducts(data);
+        } else {
+          console.error("Failed to fetch products for search bar");
+        }
+      } catch (error) {
+        console.error("Error fetching products:", error);
+      }
+    };
+
+    fetchProducts();
+  }, []);
 
   const closeTopBanner = () => setShowTopBanner(false);
 
@@ -43,7 +70,7 @@ function Navbar({ onSearchChange, user, signOut }) {
     );
     setSearchResults(filtered.slice(0, 5));
     if (onSearchChange) onSearchChange(searchQuery);
-  }, [searchQuery, onSearchChange]);
+  }, [searchQuery, onSearchChange, products]);
 
   useEffect(() => {
     function handleClickOutside(event) {
@@ -73,8 +100,27 @@ function Navbar({ onSearchChange, user, signOut }) {
     return () => window.removeEventListener('resize', handleResize);
   }, []);
 
+  // --- NEW HANDLER FOR PROTECTED NAVIGATION ---
+  const handleAuthNavigation = (path) => {
+    if (user) {
+      navigate(path);
+    } else {
+      setIsLoginModalOpen(true);
+    }
+  };
+
   return (
     <header className={style.navbar} tabIndex="-1">
+      {/* Login Required Modal */}
+      <LoginRedirectModal 
+        isOpen={isLoginModalOpen}
+        onClose={() => setIsLoginModalOpen(false)}
+        onLogin={() => {
+          setIsLoginModalOpen(false);
+          navigate("/login");
+        }}
+      />
+
       {/* Top Banner */}
       {showTopBanner && (
         <div className={style.topBanner}>
@@ -166,12 +212,14 @@ function Navbar({ onSearchChange, user, signOut }) {
             <button className={`${style.iconButton} ${style.searchIconButtonMobile}`} onClick={toggleMobileSearch}>
               <img src={searchMobile} alt="Search" className={style.actionIcon} />
             </button>
-            <Link to="/cart" className={style.iconButton}>
-              <img src={cartIcon} alt="" className={style.actionIcon} />
-            </Link>
-            <Link to="/profile" className={style.iconButton}>
-              <img src={profileIcon} alt="" className={style.actionIcon} />
-            </Link>
+            
+            {/* UPDATED CART AND PROFILE LINKS TO USE BUTTONS WITH CHECK */}
+            <button className={style.iconButton} onClick={() => handleAuthNavigation('/cart')}>
+              <img src={cartIcon} alt="Cart" className={style.actionIcon} />
+            </button>
+            <button className={style.iconButton} onClick={() => handleAuthNavigation('/profile')}>
+              <img src={profileIcon} alt="Profile" className={style.actionIcon} />
+            </button>
             
             {/* Logout Button */}
             {user && (

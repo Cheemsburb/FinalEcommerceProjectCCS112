@@ -12,7 +12,10 @@ import Profile from "./pages/Profile";
 import Login from "./pages/Login";
 import Register from "./pages/Register";
 import AdminProducts from "./pages/AdminProducts";
-import AdminUsers from "./pages/AdminUsers"; 
+import AdminUsers from "./pages/AdminUsers";
+import LogoutModal from "./components/LogoutModal"; 
+import AdminDashboard from "./pages/AdminDashboard";
+import AdminOrders from "./pages/AdminOrders";
 
 const API = "http://localhost:8000/api";
 
@@ -34,6 +37,9 @@ function App() {
   });
 
   const [cartStorage, setCartStorage] = useState([]);
+  // NEW STATE FOR LOGOUT MODAL
+  const [isLogoutModalOpen, setIsLogoutModalOpen] = useState(false);
+  
   const navigate = useNavigate();
 
   const fetchCart = async () => {
@@ -81,12 +87,38 @@ function App() {
     }
   };
 
-  const signOut = () => {
-    setToken("");
-    setUser(null);
-    localStorage.removeItem("authToken");
-    localStorage.removeItem("userData");
-    navigate("/login");
+  // 1. THIS FUNCTION OPENS THE MODAL
+  // Passed to Navbar and HomePage as 'signOut'
+  const initiateLogout = () => {
+    setIsLogoutModalOpen(true);
+  };
+
+  // 2. THIS FUNCTION PERFORMS THE ACTUAL LOGOUT
+  // Passed to the Modal's 'onConfirm'
+  const handleLogoutConfirm = async () => {
+    setIsLogoutModalOpen(false); // Close modal immediately
+
+    try {
+      if (token) {
+        await fetch(`${API}/logout`, {
+          method: "POST",
+          headers: {
+            "Authorization": `Bearer ${token}`,
+            "Content-Type": "application/json",
+            "Accept": "application/json"
+          },
+        });
+      }
+    } catch (error) {
+      console.error("Logout API call failed:", error);
+    } finally {
+      // Always clear local state
+      setToken("");
+      setUser(null);
+      localStorage.removeItem("authToken");
+      localStorage.removeItem("userData");
+      navigate("/login");
+    }
   };
 
   const addToCart = async (product, selectedSize) => {
@@ -168,17 +200,24 @@ function App() {
 
   return (
     <>
+      {/* Render the Modal here */}
+      <LogoutModal 
+        isOpen={isLogoutModalOpen} 
+        onClose={() => setIsLogoutModalOpen(false)} 
+        onConfirm={handleLogoutConfirm} 
+      />
+
       <Navbar 
         proceedToCheckout={proceedToCheckout} 
         cartCount={cartStorage.length} 
         user={user} 
-        signOut={signOut} 
+        signOut={initiateLogout} // Pass the opener function
       />
       
       <Routes>
         <Route
           path="/"
-          element={<HomePage addToCart={addToCart} token={token} signOut={signOut} />}
+          element={<HomePage addToCart={addToCart} token={token} signOut={initiateLogout} />} // Pass the opener function
         />
         <Route
           path="/products"
@@ -203,27 +242,43 @@ function App() {
         <Route path="/profile" element={<Profile token={token} />} />
         <Route path="/login" element={<Login signIn={signIn} />} />
         <Route path="/register" element={<Register signIn={signIn} />} />
-
-        {/*Admin Routes*/}
-        <Route 
-          path="/admin/products" 
-          element={
-            <AdminRoute user={user}>
-              <AdminProducts token={token} />
-            </AdminRoute>
-          } 
-        />
-        <Route 
-          path="/admin/users" 
-          element={
-            <AdminRoute user={user}>
-              <AdminUsers token={token} />
-            </AdminRoute>
-          } 
-        />
-      </Routes>
-      <Footer />
-    </>
+          {/* Admin Routes */}
+      <Route 
+        path="/admin/products" 
+        element={
+          <AdminRoute user={user}>
+            <AdminProducts token={token} />
+          </AdminRoute>
+        } 
+      />
+      <Route 
+        path="/admin/users" 
+        element={
+          <AdminRoute user={user}>
+            <AdminUsers token={token} />
+          </AdminRoute>
+        } 
+      />
+      {/* ADD THESE NEW ROUTES */}
+      <Route 
+        path="/admin/dashboard" 
+        element={
+          <AdminRoute user={user}>
+            <AdminDashboard token={token} />
+          </AdminRoute>
+        } 
+      />
+      <Route 
+        path="/admin/orders" 
+        element={
+          <AdminRoute user={user}>
+            <AdminOrders token={token} />
+          </AdminRoute>
+        } 
+      />
+        </Routes>
+        <Footer />
+      </>
   );
 }
 
