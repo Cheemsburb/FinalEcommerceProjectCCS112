@@ -1,280 +1,410 @@
-//Sarmiento
-import React, { useState } from "react";
+import React, { useState, useEffect, useCallback } from "react";
+import { useNavigate } from "react-router-dom"; 
 import styles from "./styles/CartCheckout.module.css";
 import images from "../assets/imageLoader";
+import LoginRedirectModal from "../components/LoginRedirectModal"; 
 
-function CartCheckout({ cartItems, setCartItems, clearCart, removeFromCart }) {
+const API = "http://localhost:8000/api";
 
+function CartCheckout({ cartItems, setCartItems, removeFromCart, clearCart, token }) {
+  const navigate = useNavigate();
+
+  const [loading, setLoading] = useState(true);
+  const [addresses, setAddresses] = useState([]);
   const [form, setForm] = useState({
     name: "",
-    address: "",
-    contact: "",
+    address_id: "",
     payment: "",
+    new_address: "",
+    new_state: "",
+    new_zip_code: "",
+    contact_number: "",
   });
 
-  // --- (other states are unchanged) ---
   const [promoCode, setPromoCode] = useState("");
   const [promoApplied, setPromoApplied] = useState(false);
   const [discountRate, setDiscountRate] = useState(0);
   const [promoMessage, setPromoMessage] = useState("");
   const [promoStatus, setPromoStatus] = useState("");
   const [showForm, setShowForm] = useState(false);
-
-  // 1. ADD NEW STATE for the confirmation modal
-  // It will store the ID of the item to be removed
   const [itemToRemove, setItemToRemove] = useState(null);
 
-  const deliveryFee = cartItems.length > 0 ? 10000 : 0;
   
-  // --- (calculations are unchanged) ---
-  const getSubtotal = () =>
-    cartItems.reduce((sum, item) => sum + item.price * 1, 0);
-  const getDiscount = () => getSubtotal() * discountRate;
+  const [isLoginModalOpen, setIsLoginModalOpen] = useState(false);
+
+ 
+  const fetchCart = useCallback(async () => {
+    if (!token) return;
+    setLoading(true);
+    try {
+      const res = await fetch(`${API}/cart`, { headers: { Authorization: `Bearer ${token}` } });
+      if (!res.ok) throw new Error("Failed to fetch cart");
+      const data = await res.json();
+
+      const formattedCart = Array.isArray(data.items)
+        ? data.items.map((c) => ({
+            cartItemId: c.id,
+            product_id: c.product?.id,
+            brand: c.product?.brand,
+            model: c.product?.model,
+            price: Number(c.product?.price),
+            image_link: c.product?.image_link,
+            case_size: c.product?.case_size,
+            quantity: c.quantity,
+          }))
+        : [];
+
+      setCartItems(formattedCart);
+    } catch (err) {
+      console.error("Error fetching cart:", err);
+      setCartItems([]);
+    } finally {
+      setLoading(false);
+    }
+  }, [token, setCartItems]);
+
+  
+  const fetchAddresses = useCallback(async () => {
+    if (!token) return;
+    try {
+      const res = await fetch(`${API}/addresses`, { headers: { Authorization: `Bearer ${token}` } });
+      if (!res.ok) throw new Error("Failed to fetch addresses");
+      const data = await res.json();
+      
+      setAddresses(Array.isArray(data) ? data : []);
+      
+      
+      const defaultAddr = data.find(addr => addr.is_default) || data[0];
+      if (defaultAddr) {
+        setForm(prev => ({ ...prev, address_id: defaultAddr.id }));
+      }
+    } catch (err) {
+      console.error("Error fetching addresses:", err);
+      setAddresses([]);
+    }
+  }, [token]);
+
+  
+  const fetchUserProfile = useCallback(async () => {
+    if (!token) return;
+    try {
+      const res = await fetch(`${API}/user`, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      if (res.ok) {
+        const userData = await res.json();
+        setForm(prev => ({
+          ...prev,
+          name: `${userData.first_name} ${userData.last_name}`,
+          contact_number: userData.phone_number || "" 
+        }));
+      }
+    } catch (err) {
+      console.error("Error fetching user profile:", err);
+    }
+  }, [token]);
+
+  useEffect(() => {
+    if (!token) {
+      setIsLoginModalOpen(true);
+      setLoading(false); 
+      return;
+    }
+    
+    fetchCart();
+    fetchAddresses();
+    fetchUserProfile(); 
+  }, [token, fetchCart, fetchAddresses, fetchUserProfile]);
+
+  const removeItem = (id) => setItemToRemove(id);
+
+  const handleConfirmRemove = async () => {
+    if (itemToRemove) {
+      await removeFromCart(itemToRemove);
+      setItemToRemove(null);
+      fetchCart();
+    }
+  };
+
+  const handleCancelRemove = () => setItemToRemove(null);
+
+  const deliveryFee = cartItems.length > 0 ? 10000 : 0;
+
+  const getSubtotal = () => cartItems.reduce((sum, item) => sum + item.price * (item.quantity || 1), 0);
+  const getDiscount = () => Math.round(getSubtotal() * discountRate);
   const getTotal = () => getSubtotal() - getDiscount() + deliveryFee;
 
-  // 2. UPDATE removeItem to open the modal
-  const removeItem = (id) => {
-    // This no longer shows window.confirm
-    // It just sets the ID of the item we're thinking about deleting
-    setItemToRemove(id);
-  };
-
-  // 3. ADD new handler for confirming the removal
-  const handleConfirmRemove = () => {
-    if (itemToRemove) {
-      removeFromCart(itemToRemove);
-    }
-    setItemToRemove(null); // Close the modal
-  };
-
-  // 4. ADD new handler for canceling the removal
-  const handleCancelRemove = () => {
-    setItemToRemove(null); // Close the modal
-  };
-
-  // --- (other handlers are unchanged) ---
   const showMessage = (msg, status) => {
     setPromoMessage(msg);
     setPromoStatus(status);
-    setTimeout(() => {
-      setPromoMessage("");
-      setPromoStatus("");
-    }, 3000);
+    setTimeout(() => { setPromoMessage(""); setPromoStatus(""); }, 3000);
   };
 
   const applyPromo = () => {
     const code = promoCode.trim().toUpperCase();
-    if (promoApplied) {
-      showMessage("Promo code already applied.", "error");
-      return;
+    if (promoApplied) { showMessage("Promo code already used.", "error"); return; }
+    if (code === "WTCH.CO") { setDiscountRate(0.1); setPromoApplied(true); showMessage("10% Discount Applied!", "success"); }
+    else showMessage("Invalid promo code.", "error");
+  };
+
+  const handleChange = (e) => setForm({ ...form, [e.target.name]: e.target.value });
+
+  const updateCartItemOnServer = useCallback(async (cartItemId, quantity) => {
+    if (!token) return false;
+    try {
+      const res = await fetch(`${API}/cart/${cartItemId}`, {
+        method: "PUT",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({ quantity }),
+      });
+      if (!res.ok) throw new Error("Failed to update cart item quantity on server");
+      return true;
+    } catch (err) {
+      console.error("Error updating cart item on server:", err);
+      return false;
     }
-    if (code === "WTCH.CO") {
-      setDiscountRate(0.1); // 10% discount
-      setPromoApplied(true);
-      showMessage("You got a 10% discount!", "success");
-    } else {
-      showMessage("Invalid promo code. Try again.", "error");
+  }, [token]);
+
+  const handleQuantityChange = async (cartItemId, value) => {
+    const qty = Math.max(1, Number(value) || 1);
+
+    setCartItems(prev =>
+      prev.map(item =>
+        item.cartItemId === cartItemId ? { ...item, quantity: qty } : item
+      )
+    );
+
+    const ok = await updateCartItemOnServer(cartItemId, qty);
+    if (!ok) {
+      await fetchCart();
+      showMessage("Failed to update quantity on server.", "error");
     }
   };
 
-  const handleChange = (e) => {
-    setForm({ ...form, [e.target.name]: e.target.value });
-  };
-
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    console.log(
-      `Checkout successful! Thank you, ${form.name}! Your order is being processed.`
-    );
-    console.log("Order Details:", cartItems);
-    console.log("Form Data:", form);
-    console.log("Total Paid:", getTotal().toLocaleString('en-PH', { style: 'currency', currency: 'PHP' }));
+    let shippingAddressId = form.address_id;
+    
+    if (!token) { 
+      setIsLoginModalOpen(true);
+      return; 
+    }
+    
+    if (!shippingAddressId) { alert("Please select a shipping address."); return; }
 
-    alert(
-      `✅ Checkout successful!\n\nThank you, ${form.name}! Your order is being processed.`
-    );
-    setShowForm(false);
-    clearCart();
-    setForm({ name: "", address: "", contact: "", payment: "" });
-    setPromoCode("");
-    setPromoApplied(false);
-    setDiscountRate(0);
-    setPromoMessage("");
-    setPromoStatus("");
+    if (shippingAddressId === "new") {
+      if (!form.new_address || !form.new_state || !form.new_zip_code) {
+        alert("Please fill in all new address fields.");
+        return;
+      }
+      try {
+        const res = await fetch(`${API}/addresses`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+          body: JSON.stringify({ address: form.new_address, state: form.new_state, zip_code: form.new_zip_code }),
+        });
+        if (!res.ok) throw new Error("Failed to save new address");
+        const data = await res.json();
+        shippingAddressId = data.id;
+        fetchAddresses();
+      } catch (err) {
+        console.error(err);
+        alert("Error saving new address. Please try again.");
+        return;
+      }
+    }
+
+    try {
+      const itemsPayload = cartItems.map(i => ({
+        product_id: i.product_id,
+        quantity: Number(i.quantity || 1),
+        price_at_purchase: Number(i.price || 0),
+      }));
+
+      const res = await fetch(`${API}/orders`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+        body: JSON.stringify({
+          shipping_address_id: shippingAddressId,
+          billing_address_id: shippingAddressId,
+          items: itemsPayload,
+        }),
+      });
+      if (!res.ok) {
+        const errorData = await res.json().catch(() => ({}));
+        throw new Error(errorData.message || "Checkout failed due to server error.");
+      }
+      if (clearCart) await clearCart();
+
+      setShowForm(false);
+      setForm({ name: "", address_id: "", payment: "", new_address: "", new_state: "", new_zip_code: "", contact_number: "" });
+      setPromoCode(""); setPromoApplied(false); setDiscountRate(0); setPromoMessage(""); setPromoStatus("");
+
+      alert("Checkout successful! Your order has been placed.");
+      navigate("/profile");
+    } catch (err) {
+      console.error(err);
+      alert(`Error processing your order: ${err.message || "Please try again."}`);
+    }
   };
 
+  if (loading) return <div className={styles.loadingContainer}><p>Loading cart...</p></div>;
 
   return (
     <section className={styles.cartPage}>
+      {/* Login Redirect Modal */}
+      <LoginRedirectModal 
+        isOpen={isLoginModalOpen}
+        onClose={() => navigate("/")} 
+        onLogin={() => navigate("/login")} 
+      />
 
       <h2 className={styles.yourCart}>Your Cart</h2>
-
       <div className={styles.cartLayout}>
-        {/* Cart Items Section */}
         <section className={styles.cartSection}>
           {cartItems.length > 0 ? (
             <ul className={styles.cartList}>
               {cartItems.map((item) => {
-                const imageSrc = images[item.image_link];
-
-                return ( 
-                  <li key={item.id} className={styles.cartItem}>
-                    <img
-                      src={imageSrc} 
-                      alt={item.model || item.name}
-                      className={styles.productImage}
-                    />
+                const imageSrc = images[item.image_link] || "";
+                return (
+                  <li key={item.cartItemId} className={styles.cartItem}>
+                    <img src={imageSrc} alt={item.model} className={styles.productImage} />
                     <div className={styles.itemDetails}>
-                      <strong className={styles.itemTitle}>{item.brand} | {item.model || item.name}</strong>
-                      <span className={styles.itemSize}>Size: {item.case_size || 'N/A'}</span>
-                      <span className={styles.itemPrice}>₱{item.price.toLocaleString()}</span>
+                      <strong className={styles.itemTitle}>{item.brand} | {item.model}</strong>
+                      <span className={styles.itemSize}>Size: {item.case_size || "N/A"}</span>
+
+                      <div className={styles.quantityWrapper}>
+                        <label>
+                          Quantity
+                          <div className={styles.quantityControls}>
+                            <button
+                              type="button"
+                              onClick={() => handleQuantityChange(item.cartItemId, (item.quantity || 1) - 1)}
+                            >-</button>
+                            <input
+                              type="number"
+                              min="1"
+                              value={item.quantity || 1}
+                              onChange={(e) => handleQuantityChange(item.cartItemId, e.target.value)}
+                            />
+                            <button
+                              type="button"
+                              onClick={() => handleQuantityChange(item.cartItemId, (item.quantity || 1) + 1)}
+                            >+</button>
+                          </div>
+                        </label>
+                      </div>
+
+                      <span className={styles.itemPrice}>₱{((item.price || 0) * (item.quantity || 1)).toLocaleString()}</span>
                     </div>
-                    <button
-                      className={styles.deleteBtn}
-                      onClick={() => removeItem(item.id)} // This now calls the updated function
-                      title="Remove item"
-                    >
-                      <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path><line x1="10" y1="11" x2="10" y2="17"></line><line x1="14" y1="11" x2="14" y2="17"></line></svg>
+
+                    <button className={styles.deleteBtn} onClick={() => setItemToRemove(item.cartItemId)} aria-label="Remove item" title="Remove item">
+                      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                        <polyline points="3 6 5 6 21 6"></polyline>
+                        <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
+                        <line x1="10" y1="11" x2="10" y2="17"></line>
+                        <line x1="14" y1="11" x2="14" y2="17"></line>
+                      </svg>
                     </button>
                   </li>
-                ); 
-              })} 
+                );
+              })}
             </ul>
           ) : (
-            <p className={styles.emptyCart}>Your cart is empty.</p>
+            <div className={styles.emptyState}>
+              <h3>Your cart is empty.</h3>
+              <p>Start exploring watches and add items to your cart. Your cart items will appear here.</p>
+              <button className={styles.shopBtn} onClick={() => navigate("/products")}>Shop Now</button>
+            </div>
           )}
         </section>
 
-        {/* --- (Checkout Summary Section is unchanged) --- */}
         {cartItems.length > 0 && (
           <section className={styles.checkoutSection}>
             <h3 className={styles.orderSummary}>Order Summary</h3>
             <div className={styles.summaryDetails}>
-              {/* ...summary details... */}
-              <p><span>Subtotal</span> <span>₱{getSubtotal().toLocaleString()}</span></p>
-              <p>
-                <span>Discount ({(discountRate * 100).toFixed(0)}%)</span>
-                <span className={styles.discountAmount}>-₱{getDiscount().toLocaleString()}</span>
-              </p>
-              <p><span>Delivery Fee</span> <span>₱{deliveryFee.toLocaleString()}</span></p>
+              <p><span>Subtotal</span><span>₱{getSubtotal().toLocaleString()}</span></p>
+              <p><span>Discount ({(discountRate * 100).toFixed(0)}%)</span><span className={styles.discountAmount}>-₱{getDiscount().toLocaleString()}</span></p>
+              <p><span>Delivery Fee</span><span>₱{deliveryFee.toLocaleString()}</span></p>
               <hr className={styles.summaryDivider} />
-              <p className={styles.totalAmount}><strong>Total</strong> <strong>₱{getTotal().toLocaleString()}</strong></p>
-              {/* ...promo section... */}
+              <p className={styles.totalAmount}><strong>Total</strong><strong>₱{getTotal().toLocaleString()}</strong></p>
+
               <div className={styles.promoSection}>
                 <input
-                  className={`${styles.promoInput} ${
-                    promoStatus === "success"
-                      ? styles.success
-                      : promoStatus === "error"
-                      ? styles.error
-                      : ""
-                  }`}
+                  className={`${styles.promoInput} ${promoStatus === "success" ? styles.success : promoStatus === "error" ? styles.error : ""}`}
                   type="text"
                   placeholder="Add promo code"
-                  value={promoMessage ? promoMessage : promoCode}
-                  onChange={(e) => {
-                    setPromoCode(e.target.value);
-                    if (promoMessage) {
-                      setPromoMessage("");
-                      setPromoStatus("");
-                    }
-                  }}
+                  value={promoMessage || promoCode}
+                  onChange={(e) => { setPromoCode(e.target.value); if (promoMessage) { setPromoMessage(""); setPromoStatus(""); } }}
                   disabled={promoApplied}
                   aria-label="Promo Code"
                 />
-                <button
-                  type="button"
-                  className={styles.applyBtn}
-                  onClick={applyPromo}
-                  disabled={promoApplied}
-                >
-                  {promoApplied ? "Applied" : "Apply"}
-                </button>
+                <button type="button" className={styles.applyBtn} onClick={applyPromo} disabled={promoApplied}>{promoApplied ? "Applied" : "Apply"}</button>
               </div>
-              {/* ...order button... */}
-              <button
-                type="button"
-                className={styles.orderBtn}
-                onClick={() => setShowForm(true)}
-              >
-                Go to Checkout
-                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="5" y1="12" x2="19" y2="12"></line><polyline points="12 5 19 12 12 19"></polyline></svg>
-              </button>
+
+              <button type="button" className={styles.orderBtn} onClick={() => setShowForm(true)}>Go to Checkout</button>
             </div>
           </section>
         )}
       </div>
 
-      {/* --- (Checkout Form Modal is unchanged) --- */}
+      {/* Checkout Modal */}
       {showForm && (
         <div className={styles.modalOverlay}>
           <div className={styles.modalContent}>
-            {/* ...form content... */}
             <h2>Checkout Details</h2>
             <form onSubmit={handleSubmit}>
-              <label>
-                Full Name
-                <input type="text" name="name" value={form.name} onChange={handleChange} required />
+              <label>Full Name<input type="text" name="name" value={form.name} onChange={handleChange} required /></label>
+              <label>Shipping Address
+                <select name="address_id" value={form.address_id} onChange={handleChange} required>
+                  <option value="">Select Address</option>
+                  {addresses.map((addr) => (
+                    <option key={addr.id} value={addr.id}>{addr.address}, {addr.state}, {addr.zip_code} {addr.is_default && "(Default)"}</option>
+                  ))}
+                  <option value="new">Add New Address</option>
+                </select>
               </label>
-              <label>
-                Complete Address
-                <input type="text" name="address" value={form.address} onChange={handleChange} required />
-              </label>
-              <label>
-                Contact Number
-                <input type="tel" name="contact" value={form.contact} onChange={handleChange} required />
-              </label>
-              <label>
-                Mode of Payment
-                <select name="payment" value={form.payment} onChange={handleChange} required >
+              {form.address_id === "new" && (
+                <>
+                  <label>Address<input type="text" name="new_address" value={form.new_address} onChange={handleChange} required /></label>
+                  <label>State<input type="text" name="new_state" value={form.new_state} onChange={handleChange} required /></label>
+                  <label>Zip Code<input type="text" name="new_zip_code" value={form.new_zip_code} onChange={handleChange} required /></label>
+                </>
+              )}
+              <label>Contact Number<input type="text" name="contact_number" value={form.contact_number} onChange={handleChange} required /></label>
+              <label>Mode of Payment
+                <select name="payment" value={form.payment} onChange={handleChange} required>
                   <option value="">Select Payment Method</option>
                   <option value="Cash on Delivery">Cash on Delivery</option>
                   <option value="GCash">GCash</option>
                   <option value="Credit Card">Credit Card</option>
                 </select>
               </label>
-
               <div className={styles.modalButtons}>
-                <button type="button" className={styles.cancelBtn} onClick={() => setShowForm(false)}>
-                  Cancel
-                </button>
-                <button type="submit" className={styles.confirmBtn}>
-                  Confirm Order
-                </button>
+                <button type="button" className={styles.cancelBtn} onClick={() => setShowForm(false)}>Cancel</button>
+                <button type="submit" className={styles.confirmBtn}>Confirm Order</button>
               </div>
             </form>
           </div>
         </div>
       )}
 
-      {/* 5. ADD THE NEW DELETE CONFIRMATION MODAL */}
+      {/* Remove Item Modal */}
       {itemToRemove && (
         <div className={styles.modalOverlay}>
           <div className={styles.confirmModalContent}>
             <h3 className={styles.confirmTitle}>Remove Item</h3>
-            <p className={styles.confirmText}>
-              Are you sure you want to remove this item from your cart?
-            </p>
+            <p className={styles.confirmText}>Are you sure you want to remove this item from your cart?</p>
             <div className={styles.confirmButtons}>
-              <button
-                type="button"
-                className={styles.confirmBtnSecondary}
-                onClick={handleCancelRemove}
-              >
-                Cancel
-              </button>
-              <button
-                type="button"
-                className={styles.confirmBtnPrimary}
-                onClick={handleConfirmRemove}
-              >
-                Remove
-              </button>
+              <button type="button" className={styles.confirmBtnSecondary} onClick={handleCancelRemove}>Cancel</button>
+              <button type="button" className={styles.confirmBtnPrimary} onClick={handleConfirmRemove}>Remove</button>
             </div>
           </div>
         </div>
       )}
-
     </section>
   );
 }

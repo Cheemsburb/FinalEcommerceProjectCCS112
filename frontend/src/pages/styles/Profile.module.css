@@ -1,105 +1,317 @@
-/* styles/Profile.module.css */
-
 .profileContainer {
-    max-width: 900px;
-    margin: 2rem auto;
-    padding: 2rem;
-    background-color: #ffffff;
-    /* Removed box-shadow and border-radius to match image */
+    max-width: 1200px;
+    margin: 40px auto;
+    padding: 0 24px;
+    display: grid;
+    grid-template-columns: 1.2fr 0.8fr;
+    gap: 32px;
+    font-family: 'Poppins', sans-serif;
+    align-items: start;
+}
+
+.leftColumn, .rightColumn {
+    display: flex;
+    flex-direction: column;
+    gap: 24px;
+}
+
+/* --- Shared Card Styles --- */
+.cardSection {
+    background: #fff;
+    border: 1px solid #eaeaea;
+    border-radius: 16px;
+    padding: 24px;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.02);
+}
+
+.sectionHeader {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 20px;
 }
 
 .sectionTitle {
-    font-size: 1.25rem;
+    font-size: 1.2rem;
+    font-weight: 700;
+    color: #111;
+    margin: 0;
+}
+
+.subTitle {
+    font-size: 1rem;
     font-weight: 600;
+    margin-bottom: 16px;
     color: #333;
-    margin-top: 2rem;
-    margin-bottom: 1.5rem;
-    /* Add border-bottom if you want, but image doesn't have it */
+    margin-top: 24px;
 }
 
-/* Set first title to have no top margin */
-.sectionTitle:first-of-type {
-    margin-top: 0;
+.optional {
+    font-weight: 400;
+    color: #888;
+    font-size: 0.85rem;
 }
 
+/* --- Form Elements --- */
 .formGrid {
     display: grid;
     grid-template-columns: 1fr 1fr;
-    gap: 1.5rem 2rem;
+    gap: 16px;
 }
 
 .formGroup {
     display: flex;
     flex-direction: column;
+    margin-bottom: 12px;
 }
 
 .formGroup label {
-    font-size: 0.875rem;
+    font-size: 0.85rem;
     font-weight: 600;
-    margin-bottom: 0.5rem;
     color: #555;
+    margin-bottom: 6px;
 }
 
-.formGroup input,
-.formGroup textarea {
-    width: 100%;
-    padding: 0.75rem 1rem;
-    font-size: 0.9rem;
+.formGroup input {
+    width: 100%;             /* FIX: Forces input to fit container */
+    box-sizing: border-box;  /* FIX: Includes padding in width calculation */
+    padding: 12px;
     border: 1px solid #ddd;
-    border-radius: 25px; /* Makes it pill-shaped */
-    box-sizing: border-box;
-    background-color: #ffffff;
+    border-radius: 8px;
+    font-size: 0.95rem;
+    transition: all 0.2s;
 }
 
-.formGroup textarea {
-    border-radius: 16px; /* Textarea looks less rounded */
-    min-height: 100px;
-    resize: vertical;
-}
-
-.formGroup input:focus,
-.formGroup textarea:focus {
+.formGroup input:focus {
     outline: none;
-    border-color: #007bff;
-    box-shadow: 0 0 0 2px rgba(0, 123, 255, 0.2);
+    border-color: #111;
+    box-shadow: 0 0 0 3px rgba(0,0,0,0.05);
 }
 
-.readOnly {
-    background-color: #f8f9fa; /* Light gray for read-only fields */
-    border-color: #e9ecef;
-    color: #6c757d;
+.inputDisabled {
+    background-color: #f5f5f5;
+    color: #888;
+    cursor: not-allowed;
 }
 
-.spanFull {
-    grid-column: 1 / -1; /* Makes element span both columns */
-}
-
-.saveButton {
+/* --- Buttons --- */
+.btnPrimary {
     width: 100%;
-    padding: 0.875rem;
-    font-size: 1rem;
-    font-weight: 700;
-    color: #ffffff;
-    background-color: #252525;
+    background-color: #111;
+    color: white;
+    padding: 12px;
+    border-radius: 50px;
+    font-weight: 600;
+    font-size: 0.95rem;
     border: none;
-    border-radius: 30px;
     cursor: pointer;
-    margin-top: 2.5rem;
-    transition: background-color 0.2s;
+    transition: background 0.2s;
+}
+.btnPrimary:hover { background-color: #333; }
+
+.btnSecondary {
+    padding: 10px 20px;
+    background: white;
+    border: 1px solid #ddd;
+    border-radius: 50px;
+    font-weight: 600;
+    color: #333;
+    cursor: pointer;
+}
+.btnSecondary:hover { background: #f9f9f9; border-color: #111; }
+
+.btnAddSmall {
+    background: #111;
+    color: white;
+    border: none;
+    padding: 8px 16px;
+    border-radius: 50px;
+    font-size: 0.8rem;
+    font-weight: 600;
+    cursor: pointer;
 }
 
-.saveButton:hover {
-    background-color: #444;
+/* --- Address Cards --- */
+.addressGrid {
+    display: grid;
+    grid-template-columns: 1fr; /* Full width for better readability */
+    gap: 16px;
 }
 
-/* --- Mobile Responsive --- */
-@media (max-width: 768px) {
-    .profileContainer {
-        padding: 1rem;
-    }
+.addressCard {
+    background: #f9f9f9;
+    border: 1px solid #eee;
+    border-radius: 12px;
+    padding: 20px;
+    position: relative;
+    transition: all 0.2s;
+}
 
-    .formGrid {
-        grid-template-columns: 1fr; /* Stack columns on mobile */
-        gap: 1.5rem 0;
-    }
+.defaultCard {
+    background: #fff;
+    border: 1px solid #111;
+    box-shadow: 0 4px 15px rgba(0,0,0,0.05);
+}
+
+.defaultBadge {
+    position: absolute;
+    top: -10px;
+    right: 20px;
+    background: #111;
+    color: white;
+    font-size: 0.7rem;
+    padding: 4px 10px;
+    border-radius: 4px;
+    font-weight: 600;
+    text-transform: uppercase;
+}
+
+.addressContent {
+    margin-bottom: 16px;
+}
+
+.addrTextMain {
+    font-weight: 600;
+    font-size: 1rem;
+    color: #111;
+    margin: 0 0 4px 0;
+}
+
+.addrTextSub {
+    font-size: 0.9rem;
+    color: #666;
+    margin: 0;
+}
+
+.addressActions {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    border-top: 1px solid #eee;
+    padding-top: 12px;
+}
+
+.actionLeft {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.btnAction {
+    background: none;
+    border: none;
+    color: #555;
+    font-size: 0.85rem;
+    font-weight: 500;
+    cursor: pointer;
+    padding: 0;
+}
+.btnAction:hover { color: #111; text-decoration: underline; }
+
+.divider { color: #ddd; font-size: 0.8rem; }
+
+.btnDeleteIcon {
+    background: #fee2e2;
+    color: #b91c1c;
+    border: none;
+    width: 28px;
+    height: 28px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    font-size: 1.2rem;
+    line-height: 1;
+}
+.btnDeleteIcon:hover { background: #fecaca; }
+
+/* --- Modal Styles --- */
+.modalOverlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(0,0,0,0.5);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 1000;
+}
+
+.modalContent {
+    background: white;
+    padding: 30px;
+    border-radius: 16px;
+    width: 90%;
+    max-width: 450px;
+    box-shadow: 0 10px 40px rgba(0,0,0,0.2);
+    animation: slideUp 0.3s ease-out;
+}
+
+.modalHeader {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 24px;
+}
+.modalHeader h3 { margin: 0; font-size: 1.4rem; color: #111; }
+.closeBtn {
+    background: none;
+    border: none;
+    font-size: 1.5rem;
+    cursor: pointer;
+    color: #999;
+}
+
+.modalActions {
+    display: flex;
+    justify-content: flex-end;
+    gap: 12px;
+    margin-top: 24px;
+}
+.modalActions button { width: auto; padding-left: 24px; padding-right: 24px; }
+
+/* --- Order History --- */
+.orderList { display: flex; flex-direction: column; gap: 16px; }
+.orderCard { background: white; border: 1px solid #eaeaea; border-radius: 12px; overflow: hidden; }
+.orderHeader { background: #fcfcfc; padding: 16px; border-bottom: 1px solid #f0f0f0; display: flex; justify-content: space-between; align-items: center; }
+.orderId { display: block; font-weight: 700; font-size: 0.95rem; color: #111; }
+.orderDate { font-size: 0.8rem; color: #777; }
+.orderTotal { display: block; font-weight: 700; color: #111; margin-top: 4px; }
+.orderMetaRight { text-align: right; }
+
+.statusBadge {
+    display: inline-block;
+    padding: 4px 10px;
+    border-radius: 50px;
+    font-size: 0.75rem;
+    font-weight: 700;
+    text-transform: uppercase;
+}
+.pending { background: #fffbeb; color: #b45309; }
+.processing { background: #eff6ff; color: #1d4ed8; }
+.shipped { background: #e0e7ff; color: #3730a3; }
+.delivered { background: #dcfce7; color: #15803d; }
+.cancelled { background: #fef2f2; color: #b91c1c; }
+
+.orderItem { padding: 12px 16px; border-bottom: 1px solid #f5f5f5; display: flex; justify-content: space-between; align-items: center; }
+.orderItem:last-child { border-bottom: none; }
+.itemBrand { font-weight: 600; font-size: 0.9rem; color: #111; display: block; }
+.itemModel { font-size: 0.85rem; color: #555; margin-right: 10px;}
+.itemMeta { font-size: 0.75rem; color: #888; }
+.itemPrice { font-weight: 600; font-size: 0.9rem; }
+
+.emptyState { text-align: center; padding: 40px; border: 1px dashed #ddd; border-radius: 12px; color: #777; }
+.loadingState { display: flex; justify-content: center; align-items: center; height: 60vh; font-weight: 600; color: #555; }
+
+@keyframes slideUp {
+    from { opacity: 0; transform: translateY(20px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+@media (max-width: 900px) {
+    .profileContainer { grid-template-columns: 1fr; }
+    .addressGrid { grid-template-columns: 1fr; }
 }

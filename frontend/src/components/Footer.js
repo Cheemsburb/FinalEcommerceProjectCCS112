@@ -1,21 +1,19 @@
 import React from 'react';
 import style from './styles/Footer.module.css';
-import { Link } from 'react-router-dom'; // 1. Import Link
+import { Link } from 'react-router-dom'; 
 
-// Imported Social Media Icons
 import fb from "../assets/designs/footer/fb.png";
 import ig from "../assets/designs/footer/ig.png";
 import github from "../assets/designs/footer/github.png";
 import twitter from "../assets/designs/footer/twitter.png";
 
-// Imported Payment Icons
 import visa from "../assets/designs/footer/visa.png";
 import mastercard from "../assets/designs/footer/mastercard.png";
 import paypal from "../assets/designs/footer/paypal.png";
 import apple from "../assets/designs/footer/applepay.png";
 import gpay from "../assets/designs/footer/gpay.png";
 
-// Define the data structure for the navigation columns
+
 const NAV_LINKS = [
     {
         title: "LINK",
@@ -31,15 +29,15 @@ const NAV_LINKS = [
     }
 ];
 
-// 2. Create a mapping for link text to route paths
+
 const routeMap = {
     "Home": "/",
     "Categories": "/products",
     "Brands": "/products",
-    "Profile": "/profile", // Assuming you have a /profile route
+    "Profile": "/profile", 
     "Cart": "/cart",
-    "Checkout": "/cart" // Checkout is part of the cart page
-    // Add other internal links if needed
+    "Checkout": "/cart" 
+    
 };
 
 function Footer() {

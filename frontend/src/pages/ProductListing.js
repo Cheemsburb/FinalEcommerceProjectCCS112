@@ -2,12 +2,18 @@ import React, { useState, useEffect, useCallback } from "react";
 import { useSearchParams } from "react-router-dom";
 import styles from "./styles/ProductListing.module.css";
 import ProductCard from "../components/ProductCard";
-import productsData from "../assets/products.json";
 import PriceRangeSlider from "../components/PriceRangeSlider";
 
-// Member 3 : Rigodon, Josua
-function ProductListing() {
-  const [products, setProducts] = useState([]);
+
+function ProductListing({ addToCart, token }) {
+  
+  const [masterProducts, setMasterProducts] = useState([]); 
+ 
+  const [products, setProducts] = useState([]); 
+  
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState(null);
+
   const [currentPage, setCurrentPage] = useState(1);
   const [productsPerPage] = useState(9);
 
@@ -16,11 +22,33 @@ function ProductListing() {
   const [selectedSizes, setSelectedSizes] = useState([]);
   const [selectedCategories, setSelectedCategories] = useState([]);
 
-  // 1. Add state for the filter drawer
   const [isFilterOpen, setIsFilterOpen] = useState(false);
-
   const [searchParams] = useSearchParams();
 
+ 
+  useEffect(() => {
+    const fetchProducts = async () => {
+      setIsLoading(true);
+      try {
+        const response = await fetch('http://localhost:8000/api/products');
+        if (!response.ok) {
+          throw new Error('Failed to fetch products');
+        }
+        const data = await response.json();
+        setMasterProducts(data); 
+        setProducts(data);       
+      } catch (err) {
+        console.error("Error fetching products:", err);
+        setError(err.message);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    fetchProducts();
+  }, []);
+
+  // 2. Handle URL Params
   useEffect(() => {
     const brandParams = searchParams.getAll('brand');
     const categoryParams = searchParams.getAll('category');
@@ -33,33 +61,40 @@ function ProductListing() {
     }
   }, [searchParams]);
 
+  // 3. Prevent scroll when filter is open
   useEffect(() => {
-    // Prevent scrolling when filter is open
     if (isFilterOpen) {
       document.body.style.overflow = 'hidden';
     } else {
       document.body.style.overflow = 'auto';
     }
-    // Cleanup function
     return () => {
       document.body.style.overflow = 'auto';
     };
   }, [isFilterOpen]);
 
-
+  // 4. FILTER LOGIC (Runs whenever filters or masterProducts change)
   useEffect(() => {
-    let filtered = [...productsData];
-    // ... (filtering logic remains the same) ...
+    // Start with the fetched API data
+    let filtered = [...masterProducts];
+
     if (selectedBrands.length > 0) {
       const lowerSelectedBrands = selectedBrands.map(b => b.toLowerCase());
       filtered = filtered.filter(item =>
         item.brand && lowerSelectedBrands.includes(item.brand.toLowerCase())
       );
     }
-    filtered = filtered.filter(item => item.price >= priceRange[0] && item.price <= priceRange[1]);
+    
+    // Ensure price is treated as a number
+    filtered = filtered.filter(item => {
+        const itemPrice = Number(item.price);
+        return itemPrice >= priceRange[0] && itemPrice <= priceRange[1];
+    });
+
     if (selectedSizes.length > 0) {
       filtered = filtered.filter(item => item.case_size && selectedSizes.includes(item.case_size));
     }
+    
     if (selectedCategories.length > 0) {
       filtered = filtered.filter(item =>
         item.category && Array.isArray(item.category) && item.category.some(cat => selectedCategories.includes(cat))
@@ -68,14 +103,12 @@ function ProductListing() {
     
     setProducts(filtered);
     setCurrentPage(1);
-  }, [selectedBrands, priceRange, selectedSizes, selectedCategories]);
+  }, [selectedBrands, priceRange, selectedSizes, selectedCategories, masterProducts]);
 
-  // 2. Add a function to toggle the filter
   const toggleFilter = () => {
     setIsFilterOpen(prev => !prev);
   };
 
-  // --- Handlers remain the same ---
   const handleBrandChange = (brand) => {
     setSelectedBrands(prev =>
       prev.includes(brand) ? prev.filter(b => b !== brand) : [...prev, brand]
@@ -95,20 +128,19 @@ function ProductListing() {
     setPriceRange([min, max]);
   }, []);
 
-  // ... (pagination logic remains the same) ...
+  // Pagination
   const indexOfLastProduct = currentPage * productsPerPage;
   const indexOfFirstProduct = indexOfLastProduct - productsPerPage;
   const currentProducts = products.slice(indexOfFirstProduct, indexOfLastProduct);
   const totalPages = Math.ceil(products.length / productsPerPage);
+  
   const paginate = (pageNumber) => {
      if (pageNumber >= 1 && pageNumber <= totalPages) {
        setCurrentPage(pageNumber);
      }
   };
 
-
   const getHeaderTitle = () => {
-    // ... (getHeaderTitle logic remains the same) ...
     const hasBrands = selectedBrands.length > 0;
     const hasCategories = selectedCategories.length > 0;
     const brandString = selectedBrands.join(' & ');
@@ -119,20 +151,21 @@ function ProductListing() {
     else { return "All Watches"; }
   };
 
+  if (isLoading && masterProducts.length === 0) return <div className={styles.loading}>Loading products...</div>;
+  if (error) return <div className={styles.error}>Error: {error}</div>;
+
   return (
     <div className={styles.wrapper}>
-      {/* 3. Add conditional class to sidebar. Add overlay for closing. */}
       {isFilterOpen && <div className={styles.overlay} onClick={toggleFilter}></div>}
       <aside className={`${styles.sidebar} ${isFilterOpen ? styles.sidebarOpen : ''}`}>
          <div className={styles.filterHeader}>
           <h3>Filters</h3>
-          {/* 4. Make the original icon a "close" button on mobile */}
           <span className={styles.filterIcon} onClick={toggleFilter}>
             <span className={styles.desktopIcon}>☰</span>
             <span className={styles.mobileCloseIcon}>&times;</span>
           </span>
         </div>
-        <div className={styles.filterContent}> {/* Added wrapper for scrolling */}
+        <div className={styles.filterContent}>
           <div className={styles.filterSection}>
             <h4>Brand</h4>
             {["Rolex", "Omega", "Seiko", "Richard Mille", "Casio"].map(brand => (
@@ -177,7 +210,6 @@ function ProductListing() {
       </aside>
 
       <main className={styles.main}>
-        {/* 5. Add the mobile-only filter trigger */}
         <div className={styles.mobileFilterTrigger} onClick={toggleFilter}>
             <span>Filters</span>
             <span className={styles.filterIcon}>☰</span>
@@ -188,16 +220,16 @@ function ProductListing() {
           <p>Showing {products.length > 0 ? indexOfFirstProduct + 1 : 0}–{Math.min(indexOfLastProduct, products.length)} of {products.length} Products</p>
         </div>
         
-        {/* ... (rest of the main content remains the same) ... */}
         {currentProducts.length > 0 ? (
           <div className={styles.grid}>
             {currentProducts.map((product) => (
-              <ProductCard key={product.id} {...product} />
+              <ProductCard key={product.id} {...product} addToCart={addToCart} token={token} />
             ))}
           </div>
         ) : (
           <p className={styles.noProducts}>No products match the selected filters.</p>
         )}
+        
         {totalPages > 1 && (
           <div className={styles.pagination}>
             <button onClick={() => paginate(currentPage - 1)} disabled={currentPage === 1}> &larr; Previous </button>

@@ -1,5 +1,3 @@
-/* styles/Login.module.css */
-
 .loginPage {
   display: flex;
   align-items: center;
@@ -140,18 +138,14 @@
   height: 100%;
   background-size: cover;
   background-position: center;
-  
-  /* This is the animation for sliding */
   transition: transform 0.7s ease-in-out;
 }
 
-/* This new class disables the transition for our instant "jump" */
 .noTransition {
   transition: none;
 }
 
-
-/* --- Mobile Responsive --- */
+/* Mobile Responsive */
 @media (max-width: 900px) {
   .card {
     grid-template-columns: 1fr;

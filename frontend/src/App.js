@@ -1,6 +1,5 @@
-// Correllene Ira Salar
-import React, { useState } from "react";
-import { Routes, Route } from "react-router-dom";
+import React, { useState, useEffect } from "react";
+import { Routes, Route, useNavigate, Navigate } from "react-router-dom";
 import "./App.css";
 
 import HomePage from "./pages/HomePage";
@@ -9,82 +8,277 @@ import ProductDetails from "./pages/ProductDetails";
 import CartCheckout from "./pages/CartCheckout";
 import Navbar from "./components/Navbar";
 import Footer from "./components/Footer";
-import Profile from "./pages/Profile"
-import Login from "./pages/Login"
-import Register from "./pages/Register"
+import Profile from "./pages/Profile";
+import Login from "./pages/Login";
+import Register from "./pages/Register";
+import AdminProducts from "./pages/AdminProducts";
+import AdminUsers from "./pages/AdminUsers";
+import LogoutModal from "./components/LogoutModal"; 
+import AdminDashboard from "./pages/AdminDashboard";
+import AdminOrders from "./pages/AdminOrders";
+
+const API = "http://localhost:8000/api";
+
+// AdminRoute component to protect admin routes.
+const AdminRoute = ({ user, children }) => {
+  if (!user || user.role !== 'admin') {
+    return <Navigate to="/" replace />;
+  }
+  return children;
+};
 
 function App() {
+  const [token, setToken] = useState(localStorage.getItem("authToken") || "");
+  
+  // User state to hold user information
+  const [user, setUser] = useState(() => {
+    const savedUser = localStorage.getItem("userData");
+    return savedUser ? JSON.parse(savedUser) : null;
+  });
+
   const [cartStorage, setCartStorage] = useState([]);
+  // NEW STATE FOR LOGOUT MODAL
+  const [isLogoutModalOpen, setIsLogoutModalOpen] = useState(false);
+  
+  const navigate = useNavigate();
 
-  // --- MODIFIED addToCart Function ---
-  const addToCart = (product) => {
-    // IMPORTANT: Ensure the 'product' object passed here from ProductDetails
-    // contains all necessary fields: id, brand, model, price, image_link, case_size
+  const fetchCart = async () => {
+    if (!token) return;
+    try {
+      const res = await fetch(`${API}/cart`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      if (!res.ok) throw new Error("Failed to fetch cart");
+      const data = await res.json();
 
-    setCartStorage((prevCartItems) => {
-      // Check if the product already exists in the cart
-      const existingItem = prevCartItems.find((item) => item.id === product.id);
+      const formattedCart = (data.items || []).map((c) => ({
+        cartItemId: c.id,
+        product_id: c.product?.id,
+        brand: c.product?.brand,
+        model: c.product?.model,
+        price: Number(c.product?.price),
+        image_link: c.product?.image_link,
+        case_size: c.product?.case_size,
+        quantity: c.quantity,
+      }));
 
-      if (existingItem) {
-        // If it exists, do nothing (return the previous cart state)
-        // Optionally, you could show a message to the user here
-        console.log(`Product ID ${product.id} already in cart.`);
-        alert(`${product.model || 'Item'} is already in your cart.`); // Simple alert message
-        return prevCartItems;
-      } else {
-        // If it doesn't exist, add the new product with quantity 1
-        // Explicitly include all needed properties to ensure they are saved
-        const newItem = {
-          id: product.id,
-          brand: product.brand,
-          model: product.model, // or product.name if that's sometimes used
-          price: product.price,
-          image_link: product.image,
-          case_size: product.size
-        };
-        return [...prevCartItems, newItem];
+      setCartStorage(formattedCart);
+    } catch (err) {
+      console.error("Fetch cart error:", err);
+      setCartStorage([]);
+    }
+  };
+
+  useEffect(() => {
+    if (token) {
+      localStorage.setItem("authToken", token);
+      fetchCart();
+    } else {
+      localStorage.removeItem("authToken");
+      setCartStorage([]);
+    }
+  }, [token]);
+
+  const signIn = (userToken, userData) => {
+    setToken(userToken);
+    setUser(userData);
+    if (userData) {
+      localStorage.setItem("userData", JSON.stringify(userData));
+    }
+  };
+
+  // 1. THIS FUNCTION OPENS THE MODAL
+  // Passed to Navbar and HomePage as 'signOut'
+  const initiateLogout = () => {
+    setIsLogoutModalOpen(true);
+  };
+
+  // 2. THIS FUNCTION PERFORMS THE ACTUAL LOGOUT
+  // Passed to the Modal's 'onConfirm'
+  const handleLogoutConfirm = async () => {
+    setIsLogoutModalOpen(false); // Close modal immediately
+
+    try {
+      if (token) {
+        await fetch(`${API}/logout`, {
+          method: "POST",
+          headers: {
+            "Authorization": `Bearer ${token}`,
+            "Content-Type": "application/json",
+            "Accept": "application/json"
+          },
+        });
       }
-    });
+    } catch (error) {
+      console.error("Logout API call failed:", error);
+    } finally {
+      // Always clear local state
+      setToken("");
+      setUser(null);
+      localStorage.removeItem("authToken");
+      localStorage.removeItem("userData");
+      navigate("/login");
+    }
   };
-  // --- END of MODIFIED addToCart Function ---
 
+  const addToCart = async (product, selectedSize) => {
+    if (!token) {
+      alert("Please log in to add items to your cart.");
+      navigate("/login");
+      return false;
+    }
 
-  const removeFromCart = (id) => {
-    setCartStorage((prev) => prev.filter((item) => item.id !== id));
+    try {
+      const response = await fetch(`${API}/cart`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({
+          product_id: product.id,
+          brand: product.brand,
+          model: product.model || product.name,
+          price: product.price,
+          image_link: product.image_link || product.image,
+          case_size: selectedSize || product.case_size || "N/A",
+          quantity: 1,
+        }),
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        alert(errorData.message || "Failed to add item to cart.");
+        return false;
+      }
+
+      await fetchCart(); 
+      return true;
+    } catch (error) {
+      console.error("Add to cart error:", error);
+      alert("Network error. Please try again.");
+      return false;
+    }
   };
 
-  const clearCart = () => {
-    setCartStorage([]);
+  const removeFromCart = async (cartItemId) => {
+    if (!token) return;
+    try {
+      const res = await fetch(`${API}/cart/${cartItemId}`, {
+        method: "DELETE",
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      if (!res.ok) throw new Error("Failed to remove item");
+      await fetchCart();
+    } catch (err) {
+      console.error(err);
+    }
+  };
+
+  const clearCart = async () => {
+    if (!token) return;
+    try {
+      const res = await fetch(`${API}/cart/clear`, {
+        method: "POST",
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      if (!res.ok) throw new Error("Failed to clear cart");
+      setCartStorage([]);
+    } catch (err) {
+      console.error(err);
+    }
+  };
+
+  const proceedToCheckout = () => {
+    if (!token) {
+      alert("You must be logged in to proceed to checkout!");
+      navigate("/login");
+    } else {
+      navigate("/cart");
+    }
   };
 
   return (
     <>
-      <Navbar />
+      {/* Render the Modal here */}
+      <LogoutModal 
+        isOpen={isLogoutModalOpen} 
+        onClose={() => setIsLogoutModalOpen(false)} 
+        onConfirm={handleLogoutConfirm} 
+      />
+
+      <Navbar 
+        proceedToCheckout={proceedToCheckout} 
+        cartCount={cartStorage.length} 
+        user={user} 
+        signOut={initiateLogout} // Pass the opener function
+      />
+      
       <Routes>
-        <Route path="/" element={<HomePage />} />
-        <Route path="/products" element={<ProductListing />} />
+        <Route
+          path="/"
+          element={<HomePage addToCart={addToCart} token={token} signOut={initiateLogout} />} // Pass the opener function
+        />
+        <Route
+          path="/products"
+          element={<ProductListing addToCart={addToCart} token={token} />}
+        />
         <Route
           path="/products/:id"
-          // Make sure ProductDetails fetches and passes the FULL product object to addToCart
-          element={<ProductDetails addToCart={addToCart} />}
+          element={<ProductDetails addToCart={addToCart} token={token} currentUser={user} />}
         />
         <Route
           path="/cart"
           element={
             <CartCheckout
               cartItems={cartStorage}
-              setCartItems={setCartStorage} // Pass the setter if needed for quantity updates later
+              setCartItems={setCartStorage}
               removeFromCart={removeFromCart}
               clearCart={clearCart}
+              token={token}
             />
           }
         />
-        <Route path="/profile" element={<Profile/>}/>
-        <Route path="/login" element={<Login/>}/>
-        <Route path="/register" element={<Register/>}/>
-      </Routes>
-      <Footer />
-    </>
+        <Route path="/profile" element={<Profile token={token} />} />
+        <Route path="/login" element={<Login signIn={signIn} />} />
+        <Route path="/register" element={<Register signIn={signIn} />} />
+          {/* Admin Routes */}
+      <Route 
+        path="/admin/products" 
+        element={
+          <AdminRoute user={user}>
+            <AdminProducts token={token} />
+          </AdminRoute>
+        } 
+      />
+      <Route 
+        path="/admin/users" 
+        element={
+          <AdminRoute user={user}>
+            <AdminUsers token={token} />
+          </AdminRoute>
+        } 
+      />
+      {/* ADD THESE NEW ROUTES */}
+      <Route 
+        path="/admin/dashboard" 
+        element={
+          <AdminRoute user={user}>
+            <AdminDashboard token={token} />
+          </AdminRoute>
+        } 
+      />
+      <Route 
+        path="/admin/orders" 
+        element={
+          <AdminRoute user={user}>
+            <AdminOrders token={token} />
+          </AdminRoute>
+        } 
+      />
+        </Routes>
+        <Footer />
+      </>
   );
 }
 
