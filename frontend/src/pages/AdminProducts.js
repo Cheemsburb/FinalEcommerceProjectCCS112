@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import styles from './styles/Admin.module.css'; 
 import images from '../assets/imageLoader'; 
+import AdminNav from '../components/AdminNav';
 
 const API = "http://localhost:8000/api";
 
@@ -142,10 +143,7 @@ export default function AdminProducts({ token }) {
 
     return (
         <div className={styles.adminContainer}>
-            <div className={styles.adminNav}>
-                <Link to="/admin/products" className={`${styles.adminNavLink} ${styles.activeLink}`}>Products</Link>
-                <Link to="/admin/users" className={styles.adminNavLink}>Users</Link>
-            </div>
+            <AdminNav />
 
             <header className={styles.adminHeader}>
                 <h1>Product Inventory</h1>

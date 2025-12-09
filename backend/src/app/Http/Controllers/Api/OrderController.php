@@ -64,17 +64,16 @@ class OrderController extends Controller
                 'billing_address_id' => $request->input('billing_address_id'),
             ]);
 
-            // 2. Create the OrderItems
             foreach ($cart->items as $item) {
                 $order->items()->create([
                     'product_id' => $item->product_id,
                     'quantity' => $item->quantity,
-                    'price_at_purchase' => $item->product->price, // Snapshot the price
-                ]);
+                    'price_at_purchase' => $item->product->price,
+            ]);
 
-                // 3. (Optional but important) Decrease stock
-                // $item->product->decrement('stock_quantity', $item->quantity);
-            }
+            // 3. Decrease stock (Uncomment this line)
+            $item->product->decrement('stock_quantity', $item->quantity); 
+}
 
             // 4. Clear the user's cart
             $cart->items()->delete();
@@ -96,5 +95,32 @@ class OrderController extends Controller
         }
 
         return response()->json($order->load('items.product', 'shippingAddress', 'billingAddress'));
+    }
+
+    /**
+     * ADMIN: Get all orders.
+     */
+    public function adminIndex()
+    {
+        // Load user and items with products
+        $orders = Order::with(['user', 'items.product'])
+                    ->orderBy('created_at', 'desc')
+                    ->get();
+
+        return response()->json($orders);
+    }
+
+    /**
+     * ADMIN: Update order status.
+     */
+    public function updateStatus(Request $request, Order $order)
+    {
+        $request->validate([
+            'status' => 'required|in:pending,processing,shipped,delivered,cancelled'
+        ]);
+
+        $order->update(['status' => $request->input('status')]);
+
+        return response()->json($order);
     }
 }

@@ -13,7 +13,9 @@ import Login from "./pages/Login";
 import Register from "./pages/Register";
 import AdminProducts from "./pages/AdminProducts";
 import AdminUsers from "./pages/AdminUsers";
-import LogoutModal from "./components/LogoutModal"; // <--- IMPORT MODAL
+import LogoutModal from "./components/LogoutModal"; 
+import AdminDashboard from "./pages/AdminDashboard";
+import AdminOrders from "./pages/AdminOrders";
 
 const API = "http://localhost:8000/api";
 
@@ -240,27 +242,43 @@ function App() {
         <Route path="/profile" element={<Profile token={token} />} />
         <Route path="/login" element={<Login signIn={signIn} />} />
         <Route path="/register" element={<Register signIn={signIn} />} />
-
-        {/*Admin Routes*/}
-        <Route 
-          path="/admin/products" 
-          element={
-            <AdminRoute user={user}>
-              <AdminProducts token={token} />
-            </AdminRoute>
-          } 
-        />
-        <Route 
-          path="/admin/users" 
-          element={
-            <AdminRoute user={user}>
-              <AdminUsers token={token} />
-            </AdminRoute>
-          } 
-        />
-      </Routes>
-      <Footer />
-    </>
+          {/* Admin Routes */}
+      <Route 
+        path="/admin/products" 
+        element={
+          <AdminRoute user={user}>
+            <AdminProducts token={token} />
+          </AdminRoute>
+        } 
+      />
+      <Route 
+        path="/admin/users" 
+        element={
+          <AdminRoute user={user}>
+            <AdminUsers token={token} />
+          </AdminRoute>
+        } 
+      />
+      {/* ADD THESE NEW ROUTES */}
+      <Route 
+        path="/admin/dashboard" 
+        element={
+          <AdminRoute user={user}>
+            <AdminDashboard token={token} />
+          </AdminRoute>
+        } 
+      />
+      <Route 
+        path="/admin/orders" 
+        element={
+          <AdminRoute user={user}>
+            <AdminOrders token={token} />
+          </AdminRoute>
+        } 
+      />
+        </Routes>
+        <Footer />
+      </>
   );
 }
 
