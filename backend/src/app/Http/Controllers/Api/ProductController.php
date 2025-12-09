@@ -15,7 +15,7 @@ class ProductController extends Controller
 
     public function store(Request $request)
     {
-        // 1. Validate the request
+       
         $validated = $request->validate([
             'model' => 'required|string|max:255',
             'brand' => 'required|string|max:255',
@@ -28,15 +28,14 @@ class ProductController extends Controller
             'star_review' => 'nullable|numeric'
         ]);
 
-        // 2. Generate a unique ID
+      
         do {
             $uniqueId = random_int(100000, 999999);
         } while (Product::where('id', $uniqueId)->exists());
 
-        // Assign the generated ID
+        
         $validated['id'] = $uniqueId;
 
-        // 3. Create product
         $product = Product::create($validated);
         
         return response()->json($product, 201);
@@ -49,7 +48,7 @@ class ProductController extends Controller
 
     public function update(Request $request, Product $product)
     {
-        // UPDATED: Added validation to filter input and prevent errors
+        
         $validated = $request->validate([
             'model' => 'sometimes|string|max:255',
             'brand' => 'sometimes|string|max:255',

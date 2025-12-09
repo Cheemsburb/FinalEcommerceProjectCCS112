@@ -9,9 +9,7 @@ use App\Models\Review;
 
 class ReviewController extends Controller
 {
-    /**
-     * Store a newly created review in storage.
-     */
+   
     public function store(Request $request, Product $product)
     {
         $request->validate([
@@ -19,7 +17,7 @@ class ReviewController extends Controller
             'description' => 'nullable|string',
         ]);
 
-        // Check if user has already reviewed this product
+       
         $existingReview = $product->reviews()->where('user_id', $request->user()->id)->first();
 
         if ($existingReview) {
@@ -32,7 +30,7 @@ class ReviewController extends Controller
             'description' => $request->input('description'),
         ]);
 
-        // Optional: Recalculate and update the product's average 'star_review'
+        
         $product->star_review = $product->reviews()->avg('rating');
         $product->save();
 

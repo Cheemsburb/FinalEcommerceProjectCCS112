@@ -2,14 +2,13 @@ import React, { useState, useEffect, useCallback } from "react";
 import { useSearchParams } from "react-router-dom";
 import styles from "./styles/ProductListing.module.css";
 import ProductCard from "../components/ProductCard";
-// REMOVED: import productsData from "../assets/products.json"; 
 import PriceRangeSlider from "../components/PriceRangeSlider";
 
-// Member 3 : Rigodon, Josua
+
 function ProductListing({ addToCart, token }) {
-  // Store the raw API data here
+  
   const [masterProducts, setMasterProducts] = useState([]); 
-  // Store the filtered data to be displayed here
+ 
   const [products, setProducts] = useState([]); 
   
   const [isLoading, setIsLoading] = useState(true);
@@ -26,7 +25,7 @@ function ProductListing({ addToCart, token }) {
   const [isFilterOpen, setIsFilterOpen] = useState(false);
   const [searchParams] = useSearchParams();
 
-  // 1. FETCH DATA FROM LARAVEL API
+ 
   useEffect(() => {
     const fetchProducts = async () => {
       setIsLoading(true);
@@ -36,8 +35,8 @@ function ProductListing({ addToCart, token }) {
           throw new Error('Failed to fetch products');
         }
         const data = await response.json();
-        setMasterProducts(data); // Save raw data
-        setProducts(data);       // Initialize display data
+        setMasterProducts(data); 
+        setProducts(data);       
       } catch (err) {
         console.error("Error fetching products:", err);
         setError(err.message);

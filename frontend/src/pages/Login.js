@@ -34,7 +34,7 @@ function Login({ signIn }) {
   const [isJumping, setIsJumping] = useState(false);
   const navigate = useNavigate();
 
-  // Image Carousel Logic (Remains the same)
+  
   useEffect(() => {
     const interval = setInterval(() => setActiveIndex(prev => prev + 1), 5000);
     return () => clearInterval(interval);
@@ -50,22 +50,22 @@ function Login({ signIn }) {
       return () => clearTimeout(reenableTimer);
     }
   }, [activeIndex, isJumping]);
-  // End of Image Carousel Logic
+  
 
-  // **UPDATED: handleSubmit function for API call**
+  
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError('');
     setSuccess('');
 
-    // Prepare data for API
+    
     const loginData = {
       email: email,
       password: password,
     };
 
     try {
-      // API Call to POST /login
+     
       const response = await fetch(`${API_BASE_URL}/login`, {
         method: 'POST',
         headers: {
@@ -77,22 +77,22 @@ function Login({ signIn }) {
 
       const data = await response.json();
 
-      if (response.ok) { // Login Success (e.g., status 200)
-        // Store API token and user info
+      if (response.ok) { 
+        
         localStorage.setItem("userLoggedIn", "true");
         localStorage.setItem("currentUserEmail", data.user.email);
-        localStorage.setItem("apiToken", data.token); // Store the API token
+        localStorage.setItem("apiToken", data.token); 
 
         if (signIn) signIn(data.token, data.user);
 
         setSuccess("Login successful! Redirecting...");
         
-        // Clear sensitive fields
+        
         setPassword('');
         
         setTimeout(() => navigate("/"), 2000);
       } else {
-        // API Error (e.g., 401 Unauthorized, invalid credentials)
+       
         let errorMessage = 'Invalid email or password.';
         
         if (data.message) {
@@ -103,12 +103,12 @@ function Login({ signIn }) {
         console.error("Login Error Data:", data);
       }
     } catch (err) {
-      // Network/Fetch Error (Server not running, connection issue)
+      
       setError("Connection error: Could not reach the API server. Is the backend running?");
       console.error("Fetch Error:", err);
     }
   };
-  // **END OF UPDATED: handleSubmit**
+ 
 
   return (
     <div className={style.loginPage}>

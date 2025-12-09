@@ -31,17 +31,17 @@ import richardLabel from "../assets/designs/label/richard-mille-label.png";
 import rolexLabel from "../assets/designs/label/rolex-label.png";
 import seikoLabel from "../assets/designs/label/seiko-label.png";
 
-// API URL
+
 const API = "http://localhost:8000/api";
 
 function HomePage({ addToCart, token }) {
   const [products, setProducts] = useState([]);
-  const [reviews, setReviews] = useState([]); // State for reviews
+  const [reviews, setReviews] = useState([]); 
   const [loading, setLoading] = useState(true);
   const [showAllBrands, setShowAllBrands] = useState(false);
   const carouselRef = useRef(null);
 
-  // Fetch products (and reviews) from API
+  
   useEffect(() => {
     const fetchProducts = async () => {
       try {
@@ -52,19 +52,19 @@ function HomePage({ addToCart, token }) {
         const data = await res.json();
         setProducts(data);
 
-        // --- EXTRACT RANDOM REVIEWS FROM PRODUCTS ---
+       
         const allReviews = [];
         if (data && Array.isArray(data)) {
           data.forEach(product => {
             if (product.reviews && Array.isArray(product.reviews)) {
               product.reviews.forEach(review => {
-                // Ensure the review has a user attached before adding
+                
                 if (review.user) {
                   allReviews.push({
                     id: review.id,
                     name: `${review.user.first_name} ${review.user.last_name}`,
                     rating: review.rating,
-                    comment: review.description, // Map 'description' to 'comment' for ReviewCard
+                    comment: review.description, 
                     date: new Date(review.created_at).toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })
                   });
                 }
@@ -73,10 +73,10 @@ function HomePage({ addToCart, token }) {
           });
         }
 
-        // Shuffle and pick up to 6 random reviews
+        
         const shuffledReviews = allReviews.sort(() => 0.5 - Math.random());
         setReviews(shuffledReviews.slice(0, 6));
-        // --------------------------------------------
+        
 
       } catch (err) {
         console.error("Error loading products/reviews from API:", err);

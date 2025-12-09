@@ -18,7 +18,7 @@ class AuthController extends Controller
             'email' => 'required|string|email|max:255|unique:users',
             'phone_number' => 'required|string|max:20',
             'password' => 'required|string|min:8|confirmed',
-            'role' => 'sometimes|in:admin,customer', // <--- ADD THIS LINE
+            'role' => 'sometimes|in:admin,customer', 
         ]);
 
         $user = User::create([
@@ -27,10 +27,10 @@ class AuthController extends Controller
             'email' => $request->email,
             'phone_number' => $request->phone_number,
             'password' => Hash::make($request->password),
-            'role' => $request->role ?? 'customer', // <--- UPDATE THIS LINE
+            'role' => $request->role ?? 'customer', 
         ]);
 
-        // Automatically create a cart for the new user (or admin)
+        
         $user->cart()->create();
 
         $token = $user->createToken('auth-token')->plainTextToken;

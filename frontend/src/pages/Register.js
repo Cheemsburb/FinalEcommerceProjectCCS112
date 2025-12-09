@@ -21,7 +21,7 @@ const EyeClosedIcon = () => (
   </svg>
 );
 
-// Added { signIn } prop to allow updating global auth state
+
 function Register({ signIn }) {
   const navigate = useNavigate();
   const [firstName, setFirstName] = useState('');
@@ -92,16 +92,16 @@ function Register({ signIn }) {
       if (response.ok && response.status === 201) {
         setSuccess("Account created successfully! Logging you in...");
 
-        // --- FIX START: Match Login.js Storage Keys ---
+       
         localStorage.setItem("userLoggedIn", "true");
         localStorage.setItem("currentUserEmail", data.user.email);
-        localStorage.setItem("apiToken", data.token); // Store the token exactly as Login.js does
+        localStorage.setItem("apiToken", data.token); 
         
-        // If your App.js passes a signIn function to update state, call it here
+       
         if (signIn) {
             signIn(data.token, data.user);
         }
-        // --- FIX END ---
+      
         
         setPassword('');
         setConfirmPassword('');

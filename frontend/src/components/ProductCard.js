@@ -16,7 +16,6 @@ const renderStars = (rating) => {
   return stars;
 };
 
-// Added stock_quantity to props
 function ProductCard({ id, model, brand, star_review, price, image_link, stock_quantity }) {
   const imageSrc = images[image_link];
   const [imageError, setImageError] = useState(false);

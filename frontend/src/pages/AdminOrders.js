@@ -38,7 +38,6 @@ export default function AdminOrders({ token }) {
             });
             
             if (res.ok) {
-                // Optimistic update
                 setOrders(orders.map(o => o.id === orderId ? { ...o, status: newStatus } : o));
             } else {
                 alert("Failed to update status");

@@ -6,9 +6,8 @@ import searchIcon from "../assets/designs/icons/search.png";
 import searchMobile from "../assets/designs/icons/search-mobile.png";
 import dropdownIcon from "../assets/designs/icons/dropdown.png";
 import imageLoader from "../assets/imageLoader";
-// Removed: import products from "../assets/products.json";
-import { Link, useNavigate } from "react-router-dom"; // <--- Added useNavigate
-import LoginRedirectModal from "./LoginRedirectModal"; // <--- Added Import
+import { Link, useNavigate } from "react-router-dom"; 
+import LoginRedirectModal from "./LoginRedirectModal"; 
 
 const CATEGORIES = ["Men's", "Women's", "Formal", "Sportswear"];
 const BRANDS = ["Rolex", "Omega", "Seiko", "Richard Mille", "Casio"];
@@ -25,11 +24,11 @@ function Navbar({ onSearchChange, user, signOut }) {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [isMobileSearchOpen, setIsMobileSearchOpen] = useState(false);
   
-  // NEW STATE FOR LOGIN MODAL
+  
   const [isLoginModalOpen, setIsLoginModalOpen] = useState(false);
   
   const searchContainerRef = useRef(null);
-  const navigate = useNavigate(); // <--- Init hook
+  const navigate = useNavigate();
 
   useEffect(() => {
     const storedToken = localStorage.getItem("authToken");
@@ -100,7 +99,7 @@ function Navbar({ onSearchChange, user, signOut }) {
     return () => window.removeEventListener('resize', handleResize);
   }, []);
 
-  // --- NEW HANDLER FOR PROTECTED NAVIGATION ---
+  
   const handleAuthNavigation = (path) => {
     if (user) {
       navigate(path);

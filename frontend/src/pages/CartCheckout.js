@@ -29,10 +29,10 @@ function CartCheckout({ cartItems, setCartItems, removeFromCart, clearCart, toke
   const [showForm, setShowForm] = useState(false);
   const [itemToRemove, setItemToRemove] = useState(null);
 
-  // New state for the Login Modal
+  
   const [isLoginModalOpen, setIsLoginModalOpen] = useState(false);
 
-  // 1. Fetch Cart
+ 
   const fetchCart = useCallback(async () => {
     if (!token) return;
     setLoading(true);
@@ -63,7 +63,7 @@ function CartCheckout({ cartItems, setCartItems, removeFromCart, clearCart, toke
     }
   }, [token, setCartItems]);
 
-  // 2. Fetch Addresses (and auto-select default)
+  
   const fetchAddresses = useCallback(async () => {
     if (!token) return;
     try {
@@ -73,7 +73,7 @@ function CartCheckout({ cartItems, setCartItems, removeFromCart, clearCart, toke
       
       setAddresses(Array.isArray(data) ? data : []);
       
-      // Auto-select default address if available
+      
       const defaultAddr = data.find(addr => addr.is_default) || data[0];
       if (defaultAddr) {
         setForm(prev => ({ ...prev, address_id: defaultAddr.id }));
@@ -84,7 +84,7 @@ function CartCheckout({ cartItems, setCartItems, removeFromCart, clearCart, toke
     }
   }, [token]);
 
-  // 3. NEW: Fetch User Profile to pre-fill Name and Phone
+  
   const fetchUserProfile = useCallback(async () => {
     if (!token) return;
     try {
@@ -113,7 +113,7 @@ function CartCheckout({ cartItems, setCartItems, removeFromCart, clearCart, toke
     
     fetchCart();
     fetchAddresses();
-    fetchUserProfile(); // <--- Call the new function here
+    fetchUserProfile(); 
   }, [token, fetchCart, fetchAddresses, fetchUserProfile]);
 
   const removeItem = (id) => setItemToRemove(id);

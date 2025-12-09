@@ -50,13 +50,13 @@ class OrderController extends Controller
             // Calculate total and check stock
             foreach ($cart->items as $item) {
                 if ($item->product->stock_quantity < $item->quantity) {
-                    // This is a basic check; more complex logic is needed for real-world
+                    
                     throw new \Exception('Not enough stock for ' . $item->product->model);
                 }
                 $totalAmount += $item->product->price * $item->quantity;
             }
 
-            // 1. Create the Order
+            
             $order = $user->orders()->create([
                 'total_amount' => $totalAmount,
                 'status' => 'pending',
@@ -71,11 +71,11 @@ class OrderController extends Controller
                     'price_at_purchase' => $item->product->price,
             ]);
 
-            // 3. Decrease stock (Uncomment this line)
+            
             $item->product->decrement('stock_quantity', $item->quantity); 
 }
 
-            // 4. Clear the user's cart
+            
             $cart->items()->delete();
 
             return $order;
@@ -84,12 +84,10 @@ class OrderController extends Controller
         return response()->json($order->load('items.product'), 201);
     }
 
-    /**
-     * Display the specified order.
-     */
+   
     public function show(Request $request, Order $order)
     {
-        // Check if this order belongs to the authenticated user
+        
         if ($order->user_id !== $request->user()->id) {
              return response()->json(['message' => 'Unauthorized'], 403);
         }
@@ -97,12 +95,10 @@ class OrderController extends Controller
         return response()->json($order->load('items.product', 'shippingAddress', 'billingAddress'));
     }
 
-    /**
-     * ADMIN: Get all orders.
-     */
+   
     public function adminIndex()
     {
-        // Load user and items with products
+       
         $orders = Order::with(['user', 'items.product'])
                     ->orderBy('created_at', 'desc')
                     ->get();
@@ -110,9 +106,7 @@ class OrderController extends Controller
         return response()->json($orders);
     }
 
-    /**
-     * ADMIN: Update order status.
-     */
+   
     public function updateStatus(Request $request, Order $order)
     {
         $request->validate([

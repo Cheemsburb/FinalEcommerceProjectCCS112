@@ -6,7 +6,7 @@ export default function Profile() {
     const navigate = useNavigate();
     const apiToken = localStorage.getItem("apiToken");
 
-    // --- User Profile State ---
+   
     const [firstName, setFirstName] = useState("");
     const [lastName, setLastName] = useState("");
     const [email, setEmail] = useState("");
@@ -14,17 +14,17 @@ export default function Profile() {
     const [newPassword, setNewPassword] = useState("");
     const [confirmPassword, setConfirmPassword] = useState("");
     
-    // --- Data State ---
+    
     const [addresses, setAddresses] = useState([]);
     const [orders, setOrders] = useState([]);
     const [isLoading, setIsLoading] = useState(true);
 
-    // --- Modal State for Addresses ---
+    
     const [isAddressModalOpen, setIsAddressModalOpen] = useState(false);
     const [editingAddress, setEditingAddress] = useState(null); // null = Add New, Object = Edit
     const [modalForm, setModalForm] = useState({ address: "", state: "", zip_code: "" });
 
-    // --- HELPER: API REQUEST ---
+   
     const makeAuthRequest = useCallback(async (url, method = "GET", body = null) => {
         if (!apiToken) {
             navigate("/login");
@@ -59,7 +59,7 @@ export default function Profile() {
         }
     }, [apiToken, navigate]);
 
-    // --- LOAD DATA ---
+   
     const loadUserProfile = useCallback(async () => {
         const userData = await makeAuthRequest("/user", "GET");
         if (userData) {
@@ -111,14 +111,14 @@ export default function Profile() {
         init();
     }, [apiToken, navigate, loadUserProfile, loadAddresses, loadOrders]);
 
-    // --- HANDLERS: USER INFO ---
+ 
     const handleSaveProfile = async (e) => {
         e.preventDefault();
         if (newPassword && newPassword !== confirmPassword) return alert("Passwords do not match!");
 
         const profilePayload = { first_name: firstName, last_name: lastName, phone_number: phoneNumber };
         
-        // FIX: Include password_confirmation so Laravel validation passes
+        
         if (newPassword) {
             profilePayload.password = newPassword;
             profilePayload.password_confirmation = confirmPassword; 
@@ -132,7 +132,7 @@ export default function Profile() {
         }
     };
 
-    // --- HANDLERS: ADDRESS ACTIONS ---
+    
     const handleDeleteAddress = async (id) => {
         if (!window.confirm("Delete this address?")) return;
         const success = await makeAuthRequest(`/addresses/${id}`, "DELETE");
@@ -144,7 +144,7 @@ export default function Profile() {
         if (res) loadAddresses();
     };
 
-    // --- HANDLERS: ADDRESS MODAL ---
+    
     const openAddModal = () => {
         setEditingAddress(null);
         setModalForm({ address: "", state: "", zip_code: "" });

@@ -52,7 +52,6 @@ export default function AdminProducts({ token }) {
     const handleSubmit = async (e) => {
         e.preventDefault();
         
-        // Prepare categories array
         const processedCategory = typeof formData.category === 'string' 
             ? formData.category.split(',').map(cat => cat.trim()).filter(cat => cat !== '')
             : formData.category;
@@ -67,7 +66,6 @@ export default function AdminProducts({ token }) {
         try {
             let response;
             if (isEditing) {
-                // Update: Construct specific payload to avoid sending id/timestamps
                 const payload = {
                     model: formData.model,
                     brand: formData.brand,
@@ -86,7 +84,6 @@ export default function AdminProducts({ token }) {
                     body: JSON.stringify(payload)
                 });
             } else {
-                // Create: Exclude 'id' so backend generates it automatically
                 const { id, ...createData } = formData;
                 const payload = { ...createData, category: processedCategory };
                 

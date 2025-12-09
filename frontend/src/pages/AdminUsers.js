@@ -18,7 +18,7 @@ export default function AdminUsers({ token }) {
         email: '',
         phone_number: '',
         password: '', 
-        confirmPassword: '', // Added confirm password state
+        confirmPassword: '', 
         role: 'customer'
     };
     const [formData, setFormData] = useState(initialFormState);
@@ -30,7 +30,7 @@ export default function AdminUsers({ token }) {
     const fetchUsers = async () => {
         try {
             setLoading(true);
-            // ADDED: ?t=${Date.now()} forces the browser to get fresh data
+           
             const response = await fetch(`${API}/users?t=${Date.now()}`, {
                 headers: { 
                     Authorization: `Bearer ${token}`,
@@ -58,13 +58,13 @@ export default function AdminUsers({ token }) {
     const handleSubmit = async (e) => {
         e.preventDefault();
 
-        // 1. Validation: Check if passwords match
+        
         if (formData.password !== formData.confirmPassword) {
             alert("Passwords do not match!");
             return;
         }
 
-        // Headers: We add 'Accept' to prevent the "Route [login]" crash if something else fails
+        
         const config = {
             headers: { 
                 Authorization: `Bearer ${token}`,
@@ -77,7 +77,7 @@ export default function AdminUsers({ token }) {
             let response;
             
             if (isEditing) {
-                // ... (Keep existing Edit logic as is) ...
+                
                 const { password, confirmPassword, ...updateData } = formData; 
                 const payload = password ? { ...updateData, password } : updateData;
                 
@@ -87,22 +87,18 @@ export default function AdminUsers({ token }) {
                     body: JSON.stringify(payload)
                 });
             } else {
-                // === CHANGED SECTION: USE REGISTER ROUTE ===
                 
-                // Prepare payload for /register
-                // 1. Rename 'confirmPassword' to 'password_confirmation' (Required by Laravel)
-                // 2. Include 'role' so you can create Admins
                 const registerPayload = {
                     first_name: formData.first_name,
                     last_name: formData.last_name,
                     email: formData.email,
                     phone_number: formData.phone_number,
                     password: formData.password,
-                    password_confirmation: formData.confirmPassword, // Map this field
+                    password_confirmation: formData.confirmPassword, 
                     role: formData.role
                 };
                 
-                // Point to /register instead of /users
+                
                 response = await fetch(`${API}/register`, {
                     method: 'POST',
                     headers: config.headers,
@@ -116,7 +112,7 @@ export default function AdminUsers({ token }) {
                 fetchUsers();
             } else {
                 const errorData = await response.json();
-                // Improved error message handling
+                
                 const msg = errorData.message || JSON.stringify(errorData.errors) || "Unknown error";
                 alert("Failed to save user: " + msg);
             }
@@ -128,7 +124,7 @@ export default function AdminUsers({ token }) {
 
     const handleEdit = (user) => {
         setIsEditing(true);
-        // Reset password fields when opening edit modal
+        
         setFormData({ 
             ...user, 
             phone_number: user.phone_number || '', 

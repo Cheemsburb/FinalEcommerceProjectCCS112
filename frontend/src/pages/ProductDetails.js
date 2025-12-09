@@ -199,7 +199,7 @@ function ProductDetails({ addToCart, token, currentUser }) {
                   key={size}
                   className={`${styles.sizeButton} ${selectedSize === size ? styles.selected : ""}`}
                   onClick={() => setSelectedSize(size)}
-                  disabled={isOutOfStock} // Disable size selection if out of stock
+                  disabled={isOutOfStock} 
                 >
                   {size}
                 </button>

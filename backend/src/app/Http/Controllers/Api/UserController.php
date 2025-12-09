@@ -10,17 +10,13 @@ use Illuminate\Validation\Rule;
 
 class UserController extends Controller
 {
-    /**
-     * Show the currently logged-in user.
-     */
+    
     public function show(Request $request)
     {
         return $request->user();
     }
 
-    /**
-     * Update the currently logged-in user's profile.
-     */
+   
     public function update(Request $request)
     {
         $user = $request->user();
@@ -46,9 +42,7 @@ class UserController extends Controller
         return response()->json($user);
     }
 
-    /**
-     * [ADMIN ONLY] List all users.
-     */
+   
     public function index(Request $request)
     {
         if ($request->user()->role !== 'admin') {
@@ -57,12 +51,10 @@ class UserController extends Controller
         return User::all();
     }
 
-    /**
-     * [ADMIN ONLY] Create a new user.
-     */
+   
     public function store(Request $request)
     {
-        // 1. Log that we reached this method
+        
         \Illuminate\Support\Facades\Log::info('Admin attempting to create user', $request->all());
 
         if ($request->user()->role !== 'admin') {
@@ -78,7 +70,7 @@ class UserController extends Controller
             'role' => 'required|in:admin,customer',
         ]);
 
-        // 2. Log the validated data
+        
         \Illuminate\Support\Facades\Log::info('Validation passed', $validatedData);
 
         $user = User::create([
@@ -90,7 +82,7 @@ class UserController extends Controller
             'role' => $validatedData['role'],
         ]);
 
-        // 3. Log the created user ID
+        
         \Illuminate\Support\Facades\Log::info('User created with ID: ' . $user->id);
 
         if ($user->role === 'customer') {
@@ -100,9 +92,7 @@ class UserController extends Controller
         return response()->json($user, 201);
     }
 
-    /**
-     * [ADMIN ONLY] Update a specific user's details.
-     */
+    
     public function updateUser(Request $request, $id)
     {
         if ($request->user()->role !== 'admin') {
@@ -139,9 +129,7 @@ class UserController extends Controller
         return response()->json($user);
     }
 
-    /**
-     * [ADMIN ONLY] Delete a user.
-     */
+   
     public function destroy(Request $request, $id)
     {
         if ($request->user()->role !== 'admin') {

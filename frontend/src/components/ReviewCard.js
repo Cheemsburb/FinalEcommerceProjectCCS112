@@ -1,7 +1,7 @@
 import React from 'react';
 import styles from './styles/ReviewCard.module.css';
 
-// This helper function creates the star rating display
+
 const renderStars = (rating) => {
   const stars = [];
   for (let i = 0; i < 5; i++) {

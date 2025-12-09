@@ -35,19 +35,19 @@ class CartController extends Controller
         $productId = $request->input('product_id');
         $quantity = $request->input('quantity');
 
-        // --- CHECK STOCK START ---
+        
         $product = Product::find($productId);
         
-        // Check 1: Is it completely out of stock?
+        
         if ($product->stock_quantity <= 0) {
              return response()->json(['message' => 'This product is currently out of stock.'], 400);
         }
 
-        // Check 2: (Optional) Do we have enough for the requested quantity?
+        
         if ($product->stock_quantity < $quantity) {
              return response()->json(['message' => "Only {$product->stock_quantity} left in stock."], 400);
         }
-        // --- CHECK STOCK END ---
+      
 
         $cartItem = $cart->items()->where('product_id', $productId)->first();
 
