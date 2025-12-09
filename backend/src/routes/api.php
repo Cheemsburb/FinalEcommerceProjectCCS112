@@ -38,6 +38,7 @@ Route::middleware('auth:sanctum')->group(function () {
     // Get the currently logged-in user's details
     Route::get('/user', [UserController::class, 'show']);
     // (You'll add routes for managing user addresses here later)
+    Route::put('/user', [UserController::class, 'update']);
 
     // === ADMIN ROUTES ===
     Route::get('/admin/stats', [AdminController::class, 'stats']);
