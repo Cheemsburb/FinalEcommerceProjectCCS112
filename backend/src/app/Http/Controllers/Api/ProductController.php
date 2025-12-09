@@ -10,7 +10,8 @@ class ProductController extends Controller
 {
     public function index()
     {
-        return Product::all();
+        // UPDATED: Eager load reviews and the associated user for each product
+        return Product::with('reviews.user')->get();
     }
 
     public function store(Request $request)
@@ -29,12 +30,11 @@ class ProductController extends Controller
         ]);
 
         // 2. Generate a unique ID (Fix for "Field 'id' doesn't have a default value")
-        // We generate a random 6-digit ID and ensure it doesn't already exist.
         do {
             $uniqueId = random_int(100000, 999999);
         } while (Product::where('id', $uniqueId)->exists());
 
-        // Assign the generated ID to the data
+        // Assign the generated ID
         $validated['id'] = $uniqueId;
 
         // 3. Create product
