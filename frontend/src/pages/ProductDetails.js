@@ -2,7 +2,7 @@ import React, { useState, useEffect } from "react";
 import { useParams, useNavigate, useLocation } from "react-router-dom";
 import styles from "./styles/ProductDetails.module.css";
 import ReviewCard from "../components/ReviewCard";
-import ProductCard from "../components/ProductCard"; // Import this to show related items
+import ProductCard from "../components/ProductCard"; 
 import images from "../assets/imageLoader";
 
 const renderStars = (rating) => {
@@ -23,15 +23,13 @@ function ProductDetails({ addToCart, token, currentUser }) {
   const navigate = useNavigate();
   const location = useLocation();
 
-  // --- State Management ---
   const [product, setProduct] = useState(null);
-  const [relatedProducts, setRelatedProducts] = useState([]); // State for suggestions
+  const [relatedProducts, setRelatedProducts] = useState([]); 
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState(null);
   const [selectedSize, setSelectedSize] = useState("42mm");
   const [message, setMessage] = useState("");
 
-  // Review Form State
   const [showReviewForm, setShowReviewForm] = useState(false);
   const [newReviewDescription, setNewReviewDescription] = useState("");
   const [newReviewRating, setNewReviewRating] = useState(5);
@@ -42,23 +40,18 @@ function ProductDetails({ addToCart, token, currentUser }) {
   );
   const hasUserReviewed = !!userExistingReview;
 
-  // --- Fetch Logic ---
   const fetchProductData = async () => {
     setIsLoading(true);
     try {
-      // 1. Fetch current product
       const res = await fetch(`http://localhost:8000/api/products/${id}`);
       if (!res.ok) throw new Error("Product not found");
       const data = await res.json();
       setProduct(data);
       if (data && data.case_size) setSelectedSize(data.case_size);
 
-      // 2. Fetch all products to find "related" ones
-      // Since we don't have a specific 'related' endpoint, we fetch all and slice
       const allRes = await fetch(`http://localhost:8000/api/products`);
       if (allRes.ok) {
         const allData = await allRes.json();
-        // Filter out current product and grab top 4
         const suggestions = allData
             .filter(item => item.id !== parseInt(id))
             .slice(0, 4);
@@ -74,12 +67,9 @@ function ProductDetails({ addToCart, token, currentUser }) {
 
   useEffect(() => {
     if (id) fetchProductData();
-    // Scroll to top when ID changes (important when clicking related items)
     window.scrollTo(0, 0);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [id]);
 
-  // --- Cart Logic ---
   const handleAddToCart = async () => {
     if (!token) {
       alert("Please log in to add items to your cart.");
@@ -105,7 +95,6 @@ function ProductDetails({ addToCart, token, currentUser }) {
     if (success) navigate("/cart");
   };
 
-  // --- Review Logic ---
   const handleWriteReviewClick = () => {
     if (!token) {
       navigate("/login", { state: { from: location.pathname } });
@@ -144,7 +133,7 @@ function ProductDetails({ addToCart, token, currentUser }) {
         setShowReviewForm(false);
         setNewReviewDescription("");
         setNewReviewRating(5);
-        fetchProductData(); // Re-fetch
+        fetchProductData(); 
       } else {
         const errorData = await response.json();
         alert("Failed to submit review: " + (errorData.message || "Unknown error"));
@@ -169,11 +158,13 @@ function ProductDetails({ addToCart, token, currentUser }) {
     });
   };
 
+  // Check stock status
+  const isOutOfStock = product.stock_quantity <= 0;
+
   return (
     <div className={styles.detailsPage}>
       {message && <div className={styles.toast}>{message}</div>}
 
-      {/* --- TOP SECTION --- */}
       <div className={styles.topSection}>
         <div
           className={styles.mainImage}
@@ -190,6 +181,14 @@ function ProductDetails({ addToCart, token, currentUser }) {
             <span className={styles.ratingText}>{product.star_review}/5</span>
           </div>
           <p className={styles.price}>₱{Number(product.price).toLocaleString()}</p>
+          
+          {/* Stock Display */}
+          {isOutOfStock ? (
+             <p style={{ color: "red", fontWeight: "bold", marginTop: "10px" }}>Out of Stock</p>
+          ) : (
+             <p style={{ color: "green", marginTop: "10px" }}>{product.stock_quantity} items left</p>
+          )}
+
           <p className={styles.descriptionText}>{product.description}</p>
 
           <div className={styles.sizeSelection}>
@@ -200,6 +199,7 @@ function ProductDetails({ addToCart, token, currentUser }) {
                   key={size}
                   className={`${styles.sizeButton} ${selectedSize === size ? styles.selected : ""}`}
                   onClick={() => setSelectedSize(size)}
+                  disabled={isOutOfStock} // Disable size selection if out of stock
                 >
                   {size}
                 </button>
@@ -208,13 +208,26 @@ function ProductDetails({ addToCart, token, currentUser }) {
           </div>
 
           <div className={styles.buttons}>
-            <button className={styles.addToCart} onClick={handleAddToCart}>Add to Cart</button>
-            <button className={styles.buyNowBtn} onClick={handleBuyNow}>Buy Now</button>
+            <button 
+              className={styles.addToCart} 
+              onClick={handleAddToCart}
+              disabled={isOutOfStock}
+              style={isOutOfStock ? { backgroundColor: '#ccc', cursor: 'not-allowed', color: '#666' } : {}}
+            >
+              {isOutOfStock ? "Out of Stock" : "Add to Cart"}
+            </button>
+            <button 
+              className={styles.buyNowBtn} 
+              onClick={handleBuyNow}
+              disabled={isOutOfStock}
+              style={isOutOfStock ? { backgroundColor: '#ccc', cursor: 'not-allowed', color: '#666', border: 'none' } : {}}
+            >
+              {isOutOfStock ? "Unavailable" : "Buy Now"}
+            </button>
           </div>
         </div>
       </div>
 
-      {/* --- REVIEWS SECTION --- */}
       <div className={styles.bottomSection}>
         <div className={styles.reviewsContainer}>
           <div className={styles.reviewsHeader}>
@@ -294,7 +307,6 @@ function ProductDetails({ addToCart, token, currentUser }) {
         </div>
       </div>
 
-      {/* --- YOU MIGHT ALSO LIKE SECTION (Restored) --- */}
       {relatedProducts.length > 0 && (
         <div className={styles.relatedSection}>
             <div className={styles.relatedHeader}>
